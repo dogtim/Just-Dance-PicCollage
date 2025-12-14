@@ -1,0 +1,223 @@
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import { useSearchParams } from 'next/navigation';
+import DanceCanvas from '../components/DanceCanvas';
+import ScoreBoard from '../components/ScoreBoard';
+import SamplePlaylist from '../components/SamplePlaylist';
+
+export default function Home() {
+  const searchParams = useSearchParams();
+  const [url, setUrl] = useState('');
+  const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  const [score, setScore] = useState(0);
+  const [feedback, setFeedback] = useState('Ready');
+
+  const parseVideoId = (inputUrl: string) => {
+    let id = '';
+    try {
+      if (inputUrl.includes('v=')) {
+        id = inputUrl.split('v=')[1].split('&')[0];
+      } else if (inputUrl.includes('youtu.be/')) {
+        id = inputUrl.split('youtu.be/')[1].split('?')[0];
+      } else if (inputUrl.includes('shorts/')) {
+        id = inputUrl.split('shorts/')[1].split('?')[0];
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return id;
+  };
+
+  const [processingStatus, setProcessingStatus] = useState<string | null>(null);
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string | null>(null);
+  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  const startProcessing = async (id: string, fullUrl: string) => {
+    setProcessingStatus('Starting processing...');
+    setProcessedVideoUrl(null);
+    setYoutubeId(null); // Clear previous session if any
+
+    try {
+      // Trigger processing
+      const res = await fetch('/api/process-video', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ videoId: id, url: fullUrl }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'completed') {
+        setProcessingStatus(null);
+        setYoutubeId(id); // Set youtubeId FIRST
+        setProcessedVideoUrl(data.videoUrl); // Then set processedVideoUrl
+        return;
+      }
+
+      setProcessingStatus('Processing Dance Routine... This may take a minute.');
+
+      // Poll for status
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+
+      pollIntervalRef.current = setInterval(async () => {
+        try {
+          const pollRes = await fetch(`/api/process-video?videoId=${id}`);
+          const pollData = await pollRes.json();
+
+          if (pollData.status === 'completed') {
+            if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+            setProcessingStatus(null);
+            setYoutubeId(id); // Set youtubeId FIRST
+            setProcessedVideoUrl(pollData.videoUrl); // Then set processedVideoUrl
+          } else if (pollData.status === 'not_found' || pollData.error) {
+            // Handle error or restart? 
+            // For now keep polling or timeout?
+            // If not found after we started, maybe it failed.
+            // But 'not_found' is also returned if lock doesn't exist yet but it should have 'started'.
+          }
+        } catch (e) {
+          console.error("Polling error", e);
+        }
+      }, 3000);
+
+    } catch (e) {
+      console.error(e);
+      alert("Error starting video processing");
+      setProcessingStatus(null);
+    }
+  };
+
+  const handleStart = () => {
+    const id = parseVideoId(url);
+    if (id) {
+      startProcessing(id, url);
+    } else {
+      alert("Invalid YouTube URL");
+    }
+  };
+
+  const handlePreset = (presetUrl: string) => {
+    setUrl(presetUrl);
+    const id = parseVideoId(presetUrl);
+    if (id) {
+      startProcessing(id, presetUrl);
+    }
+  };
+
+  // Handle custom URL from settings
+  useEffect(() => {
+    const customUrl = searchParams.get('customUrl');
+    if (customUrl && !youtubeId) {
+      setUrl(customUrl);
+      const id = parseVideoId(customUrl);
+      if (id) {
+        startProcessing(id, customUrl);
+      }
+    }
+  }, [searchParams]);
+
+  // Cleanup polling on unmount
+  React.useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
+    };
+  }, []);
+
+  const handleScoreUpdate = (points: number, newFeedback: string) => {
+    setScore(prev => prev + points);
+    setFeedback(newFeedback);
+  };
+
+  const handleScoreReset = () => {
+    setScore(0);
+    setFeedback('Ready');
+  };
+
+  return (
+    <div className="min-h-screen text-white font-sans selection:bg-purple-500 selection:text-white relative overflow-hidden bg-black">
+      {/* Background Image Layer - Absolute Positioned */}
+      <div className="absolute inset-0">
+        <img
+          src="/images/just_dance_2025.png"
+          alt="Just Dance 2025 Background"
+          className="w-full h-full object-cover opacity-70"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
+      </div>
+
+      {/* Navbar / Header - Only show when NOT playing */}
+      {!youtubeId && (
+        <header className="p-6 flex justify-between items-center border-b border-gray-800/50 bg-black/30 backdrop-blur-md sticky top-0 z-50">
+          <div className="flex items-center gap-2">
+            <span className="text-4xl">🕺</span>
+            <h1 className="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 hover:scale-105 transition-transform cursor-default">
+              JUST DANCE AI
+            </h1>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a href="/setting" className="p-2 bg-gray-800/80 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-xl backdrop-blur-sm" title="Settings">
+              ⚙️
+            </a>
+          </div>
+        </header>
+      )}
+
+      {/* Floating ScoreBoard - Only show when playing */}
+      {youtubeId && (
+        <div className="absolute top-6 right-6 z-50 pointer-events-none">
+          <div className="pointer-events-auto">
+            <ScoreBoard score={score} feedback={feedback} />
+          </div>
+        </div>
+      )}
+
+      <main className={`flex flex-col items-center gap-8 relative z-10 ${youtubeId ? 'w-full h-screen p-4 overflow-hidden' : 'container mx-auto p-4 md:p-8'}`}>
+
+        {/* Setup / Input Section */}
+        {!youtubeId && (
+          <div className="w-full max-w-2xl flex flex-col gap-6 items-center mt-20 animate-in fade-in slide-in-from-bottom-10 duration-700">
+            <div className="text-center space-y-4">
+              <h2 className="text-5xl font-bold leading-tight">
+                Dance like no one is watching.<br />
+                <span className="text-gray-500">But AI is.</span>
+              </h2>
+            </div>
+
+            <SamplePlaylist onSelect={handlePreset} />
+          </div>
+        )}
+
+        {/* Game Active Section */}
+        {youtubeId && (
+          <div className="w-full h-full flex flex-col gap-4 animate-in zoom-in-95 duration-500 relative">
+
+            {processingStatus && (
+              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm text-white animate-in catch-fade-in">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mb-4"></div>
+                <p className="text-xl font-bold animate-pulse">{processingStatus}</p>
+              </div>
+            )}
+
+
+            <DanceCanvas
+              key={youtubeId}
+              youtubeId={youtubeId}
+              processedVideoUrl={processedVideoUrl}
+              onScoreUpdate={handleScoreUpdate}
+              onScoreReset={handleScoreReset}
+            />
+
+            <button
+              onClick={() => { setYoutubeId(null); setScore(0); }}
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-red-600/20 hover:bg-red-600/80 text-white backdrop-blur-md rounded-full transition-all border border-red-500/50 hover:scale-105 shadow-xl z-50 font-semibold"
+            >
+              Stop Session
+            </button>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}

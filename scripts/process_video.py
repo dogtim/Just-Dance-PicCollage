@@ -1,0 +1,180 @@
+
+import cv2
+import mediapipe as mp
+import numpy as np
+import yt_dlp
+import sys
+import os
+import subprocess
+import argparse
+import json
+
+def download_video(url, output_path):
+    ydl_opts = {
+        'format': 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]',
+        'outtmpl': output_path,
+        'quiet': True,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        ydl.download([url])
+
+def process_video(input_path, output_path, video_id):
+    mp_pose = mp.solutions.pose
+    pose = mp_pose.Pose(
+        static_image_mode=False,
+        model_complexity=1,
+        smooth_landmarks=True,
+        min_detection_confidence=0.5,
+        min_tracking_confidence=0.5
+    )
+    mp_drawing = mp.solutions.drawing_utils
+
+    cap = cv2.VideoCapture(input_path)
+    if not cap.isOpened():
+        print("Error opening video file")
+        return
+
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv2.CAP_PROP_FPS)
+    
+    # For mesh data collection
+    action_mesh_data = []
+    checkpoint_interval = 0.5  # seconds
+    next_checkpoint_time = checkpoint_interval
+
+    # FFmpeg command to combine processed video with original audio
+    # Reads raw video from stdin
+    command = [
+        'ffmpeg',
+        '-y', # Overwrite output file
+        '-f', 'rawvideo',
+        '-vcodec', 'rawvideo',
+        '-s', f'{width}x{height}',
+        '-pix_fmt', 'bgr24',
+        '-r', str(fps),
+        '-i', '-', # Input from pipe
+        '-i', input_path, # Input audio from original file
+        '-map', '0:v',
+        '-map', '1:a',
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast', # Fast encoding
+        '-pix_fmt', 'yuv420p',
+        '-c:a', 'copy', # Copy audio without re-encoding
+        '-shortest',
+        output_path
+    ]
+
+    process = subprocess.Popen(command, stdin=subprocess.PIPE)
+
+    pose_connections = mp_pose.POSE_CONNECTIONS
+
+    frame_count = 0
+    total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+
+    print(f"Processing {total_frames} frames...")
+
+    while cap.isOpened():
+        ret, frame = cap.read()
+        if not ret:
+            break
+
+        frame_count += 1
+        if frame_count % 100 == 0:
+            print(f"Processed {frame_count}/{total_frames}")
+
+        # Recolor to RGB
+        image = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        image.flags.writeable = False
+
+        results = pose.process(image)
+        
+        # Calculate current time
+        current_time = frame_count / fps
+        
+        # Save mesh data at checkpoints (every 0.5s)
+        if current_time >= next_checkpoint_time and results.pose_landmarks:
+            landmarks_data = []
+            for lm in results.pose_landmarks.landmark:
+                landmarks_data.append({
+                    'x': lm.x,
+                    'y': lm.y,
+                    'z': lm.z,
+                    'visibility': lm.visibility
+                })
+            action_mesh_data.append({
+                'time': round(next_checkpoint_time, 1),
+                'landmarks': landmarks_data
+            })
+            next_checkpoint_time += checkpoint_interval
+
+        # Draw landmarks on the original frame with 0.75 alpha
+        if results.pose_landmarks:
+            overlay = frame.copy()
+            mp_drawing.draw_landmarks(
+                overlay,
+                results.pose_landmarks,
+                pose_connections,
+                mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
+                mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2)
+            )
+            # Apply alpha blending: 0.75 * overlay + 0.25 * frame
+            cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
+
+        # Write to ffmpeg
+        try:
+            process.stdin.write(frame.tobytes())
+        except Exception as e:
+            print(f"Error writing to ffmpeg: {e}")
+            break
+
+    cap.release()
+    process.stdin.close()
+    process.wait()
+    pose.close()
+    
+    # Save action mesh data to JSON
+    mesh_json_path = f'public/processed/{video_id}_action_mesh.json'
+    with open(mesh_json_path, 'w') as f:
+        json.dump(action_mesh_data, f, indent=2)
+    print(f"Saved {len(action_mesh_data)} pose checkpoints to {mesh_json_path}")
+    
+    print("Processing complete.")
+
+def main():
+    parser = argparse.ArgumentParser(description='Process YouTube video to skeleton animation.')
+    parser.add_argument('url', type=str, help='YouTube Video URL')
+    parser.add_argument('video_id', type=str, help='Video ID (for naming)')
+    
+    args = parser.parse_args()
+    
+    # Ensure directories exist
+    os.makedirs('temp', exist_ok=True)
+    os.makedirs('public/processed', exist_ok=True)
+
+    input_video_path = f'temp/{args.video_id}.mp4'
+    output_video_path = f'public/processed/{args.video_id}.mp4'
+
+    if os.path.exists(output_video_path):
+        print(f"Video already processed: {output_video_path}")
+        return
+
+    print(f"Downloading {args.url}...")
+    try:
+        download_video(args.url, input_video_path)
+    except Exception as e:
+        print(f"Failed to download video: {e}")
+        return
+
+    print("Starting processing...")
+    try:
+        process_video(input_video_path, output_video_path, args.video_id)
+    except Exception as e:
+        print(f"Processing failed: {e}")
+    finally:
+        # Cleanup temp file
+        if os.path.exists(input_video_path):
+            os.remove(input_video_path)
+
+if __name__ == "__main__":
+    main()

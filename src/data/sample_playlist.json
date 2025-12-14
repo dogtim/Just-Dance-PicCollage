@@ -1,0 +1,41 @@
+{
+    "playlist_title": "Just Dance AI Starter Pack",
+    "description": "Get moving with these sample dance routines!",
+    "videos": [
+        {
+            "title": "上車舞(SK月亮湖217)",
+            "url": "https://www.youtube.com/shorts/PucaCQG8L18",
+            "difficulty": "Easy"
+        },
+        {
+            "title": "Iris Out(米津玄師 マンレゼ)",
+            "url": "https://www.youtube.com/shorts/o2rrJ7FDi-g",
+            "difficulty": "Medium"
+        },
+        {
+            "title": "What is Love (Twice Full)",
+            "url": "https://www.youtube.com/watch?v=vaOnZ7eS92I",
+            "difficulty": "Hard"
+        },
+        {
+            "title": "What is Love (Twice Shorts)",
+            "url": "https://www.youtube.com/shorts/adtNdyMZoRs",
+            "difficulty": "Medium"
+        },
+        {
+            "title": "Shake it off (Taylor Swift Shorts)",
+            "url": "https://www.youtube.com/shorts/mz9H_GaFPPA",
+            "difficulty": "Medium"
+        },
+        {
+            "title": "Shake it off (Workout version)",
+            "url": "https://www.youtube.com/watch?v=bNXdJULGcbg",
+            "difficulty": "Hard"
+        },
+        {
+            "title": "Sexy and I Know It (Learner's Class)",
+            "url": "https://www.youtube.com/watch?v=bNXdJULGcbg",
+            "difficulty": "Hard"
+        }
+    ]
+}
