@@ -13,6 +13,25 @@ export default function Home() {
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState('Ready');
+  // Persist last score with safe hydration
+  const [lastScore, setLastScore] = useState(0);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    // Load from local storage on client mount
+    const saved = localStorage.getItem('just-dance-last-score');
+    if (saved) {
+      setLastScore(parseInt(saved, 10));
+    }
+    setIsLoaded(true);
+  }, []);
+
+  useEffect(() => {
+    // Only save if we have loaded (prevents overwriting with default 0)
+    if (isLoaded) {
+      localStorage.setItem('just-dance-last-score', lastScore.toString());
+    }
+  }, [lastScore, isLoaded]);
 
   const parseVideoId = (inputUrl: string) => {
     let id = '';
@@ -124,6 +143,14 @@ export default function Home() {
     };
   }, []);
 
+  // Keep score in ref to avoid stale closures in callbacks
+  const scoreRef = useRef(score);
+  useEffect(() => {
+    scoreRef.current = score;
+  }, [score]);
+
+  // ... (handleStart etc)
+
   const handleScoreUpdate = (points: number, newFeedback: string) => {
     setScore(prev => prev + points);
     setFeedback(newFeedback);
@@ -168,7 +195,7 @@ export default function Home() {
       {youtubeId && (
         <div className="absolute top-6 right-6 z-50 pointer-events-none">
           <div className="pointer-events-auto">
-            <ScoreBoard score={score} feedback={feedback} />
+            <ScoreBoard score={score} feedback={feedback} lastScore={lastScore} />
           </div>
         </div>
       )}
@@ -207,6 +234,10 @@ export default function Home() {
               processedVideoUrl={processedVideoUrl}
               onScoreUpdate={handleScoreUpdate}
               onScoreReset={handleScoreReset}
+              onVideoEnded={() => {
+                console.log('Video ended. Saving score:', scoreRef.current);
+                setLastScore(scoreRef.current);
+              }}
             />
 
             <button

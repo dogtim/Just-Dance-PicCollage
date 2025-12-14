@@ -19,10 +19,11 @@ interface DanceCanvasProps {
     youtubeId: string | null;  // Allow null!
     onScoreUpdate: (points: number, feedback: string) => void;
     onScoreReset: () => void;
+    onVideoEnded?: () => void;
     processedVideoUrl: string | null;
 }
 
-const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onScoreReset, processedVideoUrl }) => {
+const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onScoreReset, onVideoEnded, processedVideoUrl }) => {
     const webcamRef = useRef<Webcam>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [detector, setDetector] = useState<IPoseDetector | null>(null);
@@ -380,6 +381,10 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
                                 isRunning.current = false;
                                 setIsVideoPlaying(false);
                                 if (requestRef.current) cancelAnimationFrame(requestRef.current);
+
+                                // Call onVideoEnded BEFORE reset
+                                if (onVideoEnded) onVideoEnded();
+
                                 // Reset score when video playback completes
                                 onScoreReset();
                                 lastScoredTimeRef.current = 0;
