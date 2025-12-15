@@ -3,19 +3,26 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
+import { useSettings } from '../context/SettingsContext';
 import DanceCanvas from '../components/DanceCanvas';
 import ScoreBoard from '../components/ScoreBoard';
 import SamplePlaylist from '../components/SamplePlaylist';
+import { saveScore } from '../utils/leaderboardService';
+import Leaderboard from '../components/Leaderboard';
 
 export default function Home() {
+  const { userName, setUserName } = useSettings();
   const searchParams = useSearchParams();
   const [url, setUrl] = useState('');
   const [youtubeId, setYoutubeId] = useState<string | null>(null);
+  const [currentVideoTitle, setCurrentVideoTitle] = useState<string>('');
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState('Ready');
   // Persist last score with safe hydration
   const [lastScore, setLastScore] = useState(0);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   useEffect(() => {
     // Load from local storage on client mount
@@ -90,10 +97,7 @@ export default function Home() {
             setYoutubeId(id); // Set youtubeId FIRST
             setProcessedVideoUrl(pollData.videoUrl); // Then set processedVideoUrl
           } else if (pollData.status === 'not_found' || pollData.error) {
-            // Handle error or restart? 
-            // For now keep polling or timeout?
-            // If not found after we started, maybe it failed.
-            // But 'not_found' is also returned if lock doesn't exist yet but it should have 'started'.
+            // Check error
           }
         } catch (e) {
           console.error("Polling error", e);
@@ -110,14 +114,16 @@ export default function Home() {
   const handleStart = () => {
     const id = parseVideoId(url);
     if (id) {
+      setCurrentVideoTitle('Custom Video');
       startProcessing(id, url);
     } else {
       alert("Invalid YouTube URL");
     }
   };
 
-  const handlePreset = (presetUrl: string) => {
+  const handlePreset = (presetUrl: string, title?: string) => {
     setUrl(presetUrl);
+    setCurrentVideoTitle(title || 'Unknown Video');
     const id = parseVideoId(presetUrl);
     if (id) {
       startProcessing(id, presetUrl);
@@ -129,6 +135,7 @@ export default function Home() {
     const customUrl = searchParams.get('customUrl');
     if (customUrl && !youtubeId) {
       setUrl(customUrl);
+      setCurrentVideoTitle('Custom Video');
       const id = parseVideoId(customUrl);
       if (id) {
         startProcessing(id, customUrl);
@@ -148,8 +155,6 @@ export default function Home() {
   useEffect(() => {
     scoreRef.current = score;
   }, [score]);
-
-  // ... (handleStart etc)
 
   const handleScoreUpdate = (points: number, newFeedback: string) => {
     setScore(prev => prev + points);
@@ -173,14 +178,59 @@ export default function Home() {
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
       </div>
 
+      {/* Leaderboard Modal */}
+      {showLeaderboard && (
+        <Leaderboard
+          currentVideoTitle={currentVideoTitle || 'Global'}
+          onClose={() => setShowLeaderboard(false)}
+        />
+      )}
+
+      {/* User Name Setup Dialog */}
+      {!userName && isLoaded && (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md animate-in fade-in duration-500">
+          <div className="bg-gray-900 border border-purple-500/30 p-8 rounded-2xl shadow-2xl max-w-md w-full space-y-6">
+            <div className="text-center space-y-2">
+              <div className="text-5xl mb-4">👋</div>
+              <h2 className="text-2xl font-bold text-white">Welcome, Dancer!</h2>
+              <p className="text-gray-400">What should we call you?</p>
+            </div>
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (nameInput.trim()) setUserName(nameInput.trim());
+            }} className="space-y-4">
+              <input
+                type="text"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                placeholder="Your Name"
+                className="w-full bg-black/50 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors text-center text-lg"
+                autoFocus
+              />
+              <button
+                type="submit"
+                disabled={!nameInput.trim()}
+                className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold py-3 rounded-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02]"
+              >
+                Let's Dance!
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+
       {/* Navbar / Header - Only show when NOT playing */}
       {!youtubeId && (
         <header className="p-6 flex justify-between items-center border-b border-gray-800/50 bg-black/30 backdrop-blur-md sticky top-0 z-50">
           <div className="flex items-center gap-2">
             <span className="text-4xl">🕺</span>
-            <h1 className="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 hover:scale-105 transition-transform cursor-default">
-              JUST DANCE AI
-            </h1>
+            <div className="flex flex-col">
+              <h1 className="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 hover:scale-105 transition-transform cursor-default">
+                JUST DANCE AI
+              </h1>
+              {userName && <span className="text-xs text-gray-400 font-mono tracking-wide">Hi, {userName}</span>}
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -195,7 +245,12 @@ export default function Home() {
       {youtubeId && (
         <div className="absolute top-6 right-6 z-50 pointer-events-none">
           <div className="pointer-events-auto">
-            <ScoreBoard score={score} feedback={feedback} lastScore={lastScore} />
+            <ScoreBoard
+              score={score}
+              feedback={feedback}
+              lastScore={lastScore}
+              onShowLeaderboard={() => setShowLeaderboard(true)}
+            />
           </div>
         </div>
       )}
@@ -235,8 +290,12 @@ export default function Home() {
               onScoreUpdate={handleScoreUpdate}
               onScoreReset={handleScoreReset}
               onVideoEnded={() => {
-                console.log('Video ended. Saving score:', scoreRef.current);
-                setLastScore(scoreRef.current);
+                const finalScore = scoreRef.current;
+                console.log('Video ended. Saving score:', finalScore);
+                setLastScore(finalScore);
+                if (userName && finalScore > 0) {
+                  saveScore(userName, currentVideoTitle, finalScore);
+                }
               }}
             />
 

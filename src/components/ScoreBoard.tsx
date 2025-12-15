@@ -6,9 +6,10 @@ interface ScoreBoardProps {
     score: number;
     feedback: string;
     lastScore?: number;
+    onShowLeaderboard?: () => void;
 }
 
-const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, feedback, lastScore }) => {
+const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, feedback, lastScore, onShowLeaderboard }) => {
     return (
         <div className="flex flex-col gap-4 p-6 bg-gray-900/80 backdrop-blur-md rounded-2xl border border-gray-700 text-white shadow-xl min-w-[200px]">
             {lastScore !== undefined && (
@@ -36,6 +37,15 @@ const ScoreBoard: React.FC<ScoreBoardProps> = ({ score, feedback, lastScore }) =
                     {feedback || 'Ready'}
                 </div>
             </div>
+
+            {onShowLeaderboard && (
+                <button
+                    onClick={onShowLeaderboard}
+                    className="mt-2 w-full py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm font-semibold text-gray-300 transition-colors flex items-center justify-center gap-2"
+                >
+                    <span>🏆</span> Leaderboard
+                </button>
+            )}
         </div>
     );
 };

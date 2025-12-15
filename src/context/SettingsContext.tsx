@@ -11,6 +11,8 @@ interface SettingsContextType {
     setStartDelay: (delay: number) => void;
     showDebugInfo: boolean;
     setShowDebugInfo: (show: boolean) => void;
+    userName: string;
+    setUserName: (name: string) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -20,6 +22,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [detectionModel, setDetectionModel] = useState<DetectionModel>('Google Media Pipe');
     const [startDelay, setStartDelay] = useState<number>(3);
     const [showDebugInfo, setShowDebugInfo] = useState<boolean>(false);
+    const [userName, setUserName] = useState<string>('');
 
     useEffect(() => {
         // Run only on client-side mount
@@ -36,6 +39,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const savedDebug = localStorage.getItem('just-dance-show-debug');
         if (savedDebug) {
             setShowDebugInfo(savedDebug === 'true');
+        }
+
+        const savedName = localStorage.getItem('just-dance-username');
+        if (savedName) {
+            setUserName(savedName);
         }
     }, []);
 
@@ -54,6 +62,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('just-dance-show-debug', String(show));
     };
 
+    const updateUserName = (name: string) => {
+        setUserName(name);
+        localStorage.setItem('just-dance-username', name);
+    };
+
     return (
         <SettingsContext.Provider value={{
             detectionModel,
@@ -61,7 +74,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             startDelay,
             setStartDelay: updateStartDelay,
             showDebugInfo,
-            setShowDebugInfo: updateShowDebugInfo
+            setShowDebugInfo: updateShowDebugInfo,
+            userName,
+            setUserName: updateUserName
         }}>
             {children}
         </SettingsContext.Provider>

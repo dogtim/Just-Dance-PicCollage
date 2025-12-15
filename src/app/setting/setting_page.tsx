@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useSettings, DetectionModel } from '../../context/SettingsContext';
 
 export default function Setting() {
-    const { detectionModel, setDetectionModel, startDelay, setStartDelay, showDebugInfo, setShowDebugInfo } = useSettings();
+    const { detectionModel, setDetectionModel, startDelay, setStartDelay, showDebugInfo, setShowDebugInfo, userName, setUserName } = useSettings();
     const [url, setUrl] = useState('');
     const router = useRouter();
 
@@ -24,7 +24,20 @@ export default function Setting() {
 
                 <div className="bg-gray-900/50 backdrop-blur rounded-2xl p-8 border border-gray-800">
                     <div className="space-y-6">
+                        {/* User Name */}
                         <div className="flex flex-col gap-2">
+                            <label className="text-lg font-semibold text-gray-200">DisplayName</label>
+                            <p className="text-sm text-gray-500 mb-2">How you want to be addressed.</p>
+
+                            <input
+                                type="text"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                                className="w-full md:w-1/2 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-purple-500 transition-colors"
+                            />
+                        </div>
+
+                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
                             <label className="text-lg font-semibold text-gray-200">Detection Model</label>
                             <p className="text-sm text-gray-500 mb-2">Choose the AI model used for pose estimation.</p>
 

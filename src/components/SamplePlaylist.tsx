@@ -2,7 +2,7 @@ import React from 'react';
 import samplePlaylist from '../data/sample_playlist.json';
 
 interface SamplePlaylistProps {
-    onSelect: (url: string) => void;
+    onSelect: (url: string, title: string) => void;
 }
 
 const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
@@ -42,7 +42,7 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
                     return (
                         <button
                             key={idx}
-                            onClick={() => onSelect(video.url)}
+                            onClick={() => onSelect(video.url, video.title)}
                             className={`flex items-center gap-4 p-4 bg-gray-800/50 hover:bg-gray-800 border border-gray-700/50 ${styleConfig.borderColor} rounded-xl transition-all group text-left`}
                         >
                             <div className={`w-10 h-10 rounded-full ${styleConfig.bgColor} flex items-center justify-center text-xl group-hover:scale-110 transition-transform`}>
