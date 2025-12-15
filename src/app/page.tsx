@@ -115,6 +115,7 @@ export default function Home() {
     const id = parseVideoId(url);
     if (id) {
       setCurrentVideoTitle('Custom Video');
+      setLastScore(0);
       startProcessing(id, url);
     } else {
       alert("Invalid YouTube URL");
@@ -126,6 +127,7 @@ export default function Home() {
     setCurrentVideoTitle(title || 'Unknown Video');
     const id = parseVideoId(presetUrl);
     if (id) {
+      setLastScore(0);
       startProcessing(id, presetUrl);
     }
   };
@@ -138,6 +140,7 @@ export default function Home() {
       setCurrentVideoTitle('Custom Video');
       const id = parseVideoId(customUrl);
       if (id) {
+        setLastScore(0);
         startProcessing(id, customUrl);
       }
     }
@@ -300,7 +303,7 @@ export default function Home() {
             />
 
             <button
-              onClick={() => { setYoutubeId(null); setScore(0); }}
+              onClick={() => { setYoutubeId(null); setScore(0); setLastScore(0); }}
               className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-red-600/20 hover:bg-red-600/80 text-white backdrop-blur-md rounded-full transition-all border border-red-500/50 hover:scale-105 shadow-xl z-50 font-semibold"
             >
               Stop Session
