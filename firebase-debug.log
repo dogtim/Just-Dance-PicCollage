@@ -1,0 +1,43 @@
+[debug] [2025-12-15T06:01:57.277Z] ----------------------------------------------------------------------
+[debug] [2025-12-15T06:01:57.279Z] Command:       /opt/homebrew/Cellar/node/23.2.0_1/bin/node /Users/hsiaotingchen/.npm/_npx/7750544ccf494d8b/node_modules/.bin/firebase apphosting:secrets:set next-public-firebase-measurement-id --project just-dance-piccollage
+[debug] [2025-12-15T06:01:57.279Z] CLI Version:   15.0.0
+[debug] [2025-12-15T06:01:57.279Z] Platform:      darwin
+[debug] [2025-12-15T06:01:57.279Z] Node Version:  v23.2.0
+[debug] [2025-12-15T06:01:57.279Z] Time:          Mon Dec 15 2025 14:01:57 GMT+0800 (Taipei Standard Time)
+[debug] [2025-12-15T06:01:57.280Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2025-12-15T06:01:57.304Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-15T06:01:57.304Z] > authorizing via signed-in user (fatfattim@gmail.com)
+[debug] [2025-12-15T06:01:57.305Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2025-12-15T06:01:57.305Z] > authorizing via signed-in user (fatfattim@gmail.com)
+[debug] [2025-12-15T06:01:57.305Z] [iam] checking project just-dance-piccollage for permissions ["firebase.projects.get","secretmanager.secrets.create","secretmanager.secrets.get","secretmanager.secrets.getIamPolicy","secretmanager.secrets.setIamPolicy","secretmanager.secrets.update","secretmanager.versions.add"]
+[debug] [2025-12-15T06:01:57.305Z] Checked if tokens are valid: true, expires at: 1765781469791
+[debug] [2025-12-15T06:01:57.305Z] Checked if tokens are valid: true, expires at: 1765781469791
+[debug] [2025-12-15T06:01:57.306Z] >>> [apiv2][query] POST https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage:testIamPermissions [none]
+[debug] [2025-12-15T06:01:57.306Z] >>> [apiv2][(partial)header] POST https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage:testIamPermissions x-goog-quota-user=projects/just-dance-piccollage
+[debug] [2025-12-15T06:01:57.306Z] >>> [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage:testIamPermissions {"permissions":["firebase.projects.get","secretmanager.secrets.create","secretmanager.secrets.get","secretmanager.secrets.getIamPolicy","secretmanager.secrets.setIamPolicy","secretmanager.secrets.update","secretmanager.versions.add"]}
+[debug] [2025-12-15T06:01:58.300Z] <<< [apiv2][status] POST https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage:testIamPermissions 200
+[debug] [2025-12-15T06:01:58.300Z] <<< [apiv2][body] POST https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage:testIamPermissions {"permissions":["firebase.projects.get","secretmanager.secrets.create","secretmanager.secrets.get","secretmanager.secrets.getIamPolicy","secretmanager.secrets.setIamPolicy","secretmanager.secrets.update","secretmanager.versions.add"]}
+[debug] [2025-12-15T06:01:58.300Z] Checked if tokens are valid: true, expires at: 1765781469791
+[debug] [2025-12-15T06:01:58.300Z] Checked if tokens are valid: true, expires at: 1765781469791
+[debug] [2025-12-15T06:01:58.300Z] >>> [apiv2][query] GET https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage [none]
+[debug] [2025-12-15T06:01:58.511Z] <<< [apiv2][status] GET https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage 200
+[debug] [2025-12-15T06:01:58.513Z] <<< [apiv2][body] GET https://cloudresourcemanager.googleapis.com/v1/projects/just-dance-piccollage {"projectNumber":"582047743270","projectId":"just-dance-piccollage","lifecycleState":"ACTIVE","name":"Just-Dance-PicCollage","labels":{"firebase":"enabled","firebase-core":"disabled"},"createTime":"2025-12-14T07:20:13.637276Z"}
+[debug] [2025-12-15T06:01:58.514Z] Checked if tokens are valid: true, expires at: 1765781469791
+[debug] [2025-12-15T06:01:58.514Z] Checked if tokens are valid: true, expires at: 1765781469791
+[debug] [2025-12-15T06:01:58.514Z] >>> [apiv2][query] GET https://secretmanager.googleapis.com/v1/projects/just-dance-piccollage/secrets/next-public-firebase-measurement-id [none]
+[debug] [2025-12-15T06:01:58.823Z] <<< [apiv2][status] GET https://secretmanager.googleapis.com/v1/projects/just-dance-piccollage/secrets/next-public-firebase-measurement-id 200
+[debug] [2025-12-15T06:01:58.823Z] <<< [apiv2][body] GET https://secretmanager.googleapis.com/v1/projects/just-dance-piccollage/secrets/next-public-firebase-measurement-id {"name":"projects/582047743270/secrets/next-public-firebase-measurement-id","replication":{"automatic":{}},"createTime":"2025-12-15T05:56:16.514821Z","labels":{"firebase-managed":"apphosting"},"etag":"\"1645f7450d7718\""}
+[debug] [2025-12-15T06:02:09.718Z] ExitPromptError: User force closed the prompt with SIGINT
+    at Interface.sigint (/Users/hsiaotingchen/.npm/_npx/7750544ccf494d8b/node_modules/@inquirer/core/dist/commonjs/lib/create-prompt.js:101:37)
+    at Interface.emit (node:events:507:28)
+    at [_ttyWrite] [as _ttyWrite] (node:internal/readline/interface:1125:18)
+    at ReadStream.onkeypress (node:internal/readline/interface:264:20)
+    at ReadStream.emit (node:events:519:35)
+    at emitKeys (node:internal/readline/utils:370:14)
+    at emitKeys.next (<anonymous>)
+    at ReadStream.onData (node:internal/readline/emitKeypressEvents:64:36)
+    at ReadStream.emit (node:events:507:28)
+    at addChunk (node:internal/streams/readable:559:12)
+[error] 
+[error] Error: An unexpected error has occurred.

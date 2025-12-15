@@ -11,6 +11,14 @@ import { saveScore } from '../utils/leaderboardService';
 import Leaderboard from '../components/Leaderboard';
 
 export default function Home() {
+  return (
+    <React.Suspense fallback={<div className="min-h-screen bg-black flex items-center justify-center text-white">Loading...</div>}>
+      <HomeContent />
+    </React.Suspense>
+  );
+}
+
+function HomeContent() {
   const { userName, setUserName } = useSettings();
   const searchParams = useSearchParams();
   const [url, setUrl] = useState('');
