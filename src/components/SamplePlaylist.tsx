@@ -1,16 +1,50 @@
-import React from 'react';
-import samplePlaylist from '../data/sample_playlist.json';
+import React, { useEffect, useState } from 'react';
+import localPlaylist from '../data/sample_playlist.json';
+import { storage } from '@/lib/firebase';
+import { ref, getDownloadURL } from 'firebase/storage';
 
 interface SamplePlaylistProps {
     onSelect: (url: string, title: string) => void;
 }
 
+interface Video {
+    title: string;
+    url: string;
+    difficulty: string;
+}
+
+interface PlaylistData {
+    videos: Video[];
+}
+
 const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
+    const [playlist, setPlaylist] = useState<PlaylistData>(localPlaylist as PlaylistData);
+
+    useEffect(() => {
+        const fetchPlaylist = async () => {
+            try {
+                const url = await getDownloadURL(ref(storage, 'sample_playlist.json'));
+                const response = await fetch(url);
+                if (response.ok) {
+                    const data = await response.json();
+                    setPlaylist(data);
+                }
+            } catch (error: any) {
+                if (error.code === 'storage/unauthorized') {
+                    console.warn("⚠️ Firebase Storage Permission Denied. using local playlist fallback. \nTo fix this: Go to Firebase Console > Storage > Rules and allow public read/write.");
+                } else {
+                    console.log("Using local playlist fallback", error);
+                }
+            }
+        };
+        fetchPlaylist();
+    }, []);
+
     return (
         <div className="w-full max-w-lg mt-12">
             <h3 className="text-gray-400 font-semibold mb-4 text-sm uppercase tracking-wider text-center">Sample Playlist</h3>
             <div className="flex flex-col gap-3">
-                {samplePlaylist.videos.map((video, idx) => {
+                {playlist.videos.map((video, idx) => {
                     let styleConfig = {
                         color: 'purple',
                         icon: '📱',

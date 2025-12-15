@@ -21,9 +21,10 @@ interface DanceCanvasProps {
     onScoreReset: () => void;
     onVideoEnded?: () => void;
     processedVideoUrl: string | null;
+    processedMeshUrl?: string | null;
 }
 
-const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onScoreReset, onVideoEnded, processedVideoUrl }) => {
+const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onScoreReset, onVideoEnded, processedVideoUrl, processedMeshUrl }) => {
     const webcamRef = useRef<Webcam>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [detector, setDetector] = useState<IPoseDetector | null>(null);
@@ -81,7 +82,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
 
     // Load Action Mesh when processedVideoUrl changes
     useEffect(() => {
-        console.log('[ACTION MESH] useEffect triggered', { processedVideoUrl, youtubeId });
+        console.log('[ACTION MESH] useEffect triggered', { processedVideoUrl, youtubeId, processedMeshUrl });
 
         if (!processedVideoUrl || !youtubeId) {
             console.log('[ACTION MESH] Skipping - missing processedVideoUrl or youtubeId');
@@ -89,7 +90,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
             return;
         }
 
-        const meshUrl = `/processed/${youtubeId}_action_mesh.json`;
+        const meshUrl = processedMeshUrl || `/processed/${youtubeId}_action_mesh.json`;
         console.log('[ACTION MESH] Fetching from:', meshUrl);
 
         fetch(meshUrl)
@@ -110,7 +111,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
                 console.error('[ACTION MESH] Attempted URL:', meshUrl);
                 //setActionMesh(null);
             });
-    }, [processedVideoUrl, youtubeId]);
+    }, [processedVideoUrl, youtubeId, processedMeshUrl]);
 
     // Initialize Detector
     useEffect(() => {

@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
+import { storage } from '@/lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export async function POST(request: Request) {
     try {
@@ -60,8 +62,36 @@ export async function POST(request: Request) {
             console.error(`[Python Script Error]: ${data}`);
         });
 
-        pythonProcess.on('close', (code) => {
+        pythonProcess.on('close', async (code) => {
             console.log(`Python process exited with code ${code}`);
+
+            if (code === 0) {
+                try {
+                    // Upload MP4
+                    if (fs.existsSync(processedPath)) {
+                        const fileBuffer = fs.readFileSync(processedPath);
+                        const storageRef = ref(storage, `assets/${videoId}.mp4`);
+                        await uploadBytes(storageRef, fileBuffer);
+                        console.log(`Uploaded ${videoId}.mp4 to Firebase Storage (assets)`);
+                    }
+
+                    // Upload JSON if exists
+                    const jsonPath = path.join(process.cwd(), 'public', 'processed', `${videoId}_action_mesh.json`);
+                    if (fs.existsSync(jsonPath)) {
+                        const jsonBuffer = fs.readFileSync(jsonPath);
+                        const jsonRef = ref(storage, `assets/${videoId}_action_mesh.json`);
+                        await uploadBytes(jsonRef, jsonBuffer);
+                        console.log(`Uploaded ${videoId}_action_mesh.json to Firebase Storage (assets)`);
+                    }
+                } catch (error: any) {
+                    if (error?.code === 'storage/unauthorized') {
+                        console.error('❌ Firebase Storage Permission Denied (Upload Failed). Check your Storage Rules.');
+                    } else {
+                        console.error('Error uploading to Firebase Storage:', error);
+                    }
+                }
+            }
+
             // Remove lock
             if (fs.existsSync(lockFile)) fs.unlinkSync(lockFile);
         });
@@ -83,8 +113,32 @@ export async function GET(request: Request) {
     }
 
     const processedPath = path.join(process.cwd(), 'public', 'processed', `${videoId}.mp4`);
-    if (fs.existsSync(processedPath)) {
-        return NextResponse.json({ status: 'completed', videoUrl: `/processed/${videoId}.mp4` });
+
+    // Check Firebase Storage first
+    try {
+        const storageRef = ref(storage, `assets/${videoId}.mp4`);
+        const videoUrl = await getDownloadURL(storageRef);
+
+        let meshUrl = null;
+        try {
+            const meshRef = ref(storage, `assets/${videoId}_action_mesh.json`);
+            await getDownloadURL(meshRef); // Check existence
+            // Use local proxy to avoid CORS issues with Firebase Storage
+            meshUrl = `/api/proxy-storage?path=assets/${videoId}_action_mesh.json`;
+        } catch (e) {
+            console.log('Mesh not found in storage');
+        }
+
+        return NextResponse.json({ status: 'completed', videoUrl, meshUrl });
+    } catch (error) {
+        // If not found in storage, check local
+        if (fs.existsSync(processedPath)) {
+            return NextResponse.json({
+                status: 'completed',
+                videoUrl: `/processed/${videoId}.mp4`,
+                meshUrl: `/processed/${videoId}_action_mesh.json`
+            });
+        }
     }
 
     const lockFile = path.join(process.cwd(), 'temp', `${videoId}.lock`);

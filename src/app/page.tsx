@@ -58,11 +58,13 @@ export default function Home() {
 
   const [processingStatus, setProcessingStatus] = useState<string | null>(null);
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string | null>(null);
+  const [processedMeshUrl, setProcessedMeshUrl] = useState<string | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const startProcessing = async (id: string, fullUrl: string) => {
     setProcessingStatus('Starting processing...');
     setProcessedVideoUrl(null);
+    setProcessedMeshUrl(null);
     setYoutubeId(null); // Clear previous session if any
 
     try {
@@ -78,6 +80,7 @@ export default function Home() {
         setProcessingStatus(null);
         setYoutubeId(id); // Set youtubeId FIRST
         setProcessedVideoUrl(data.videoUrl); // Then set processedVideoUrl
+        setProcessedMeshUrl(data.meshUrl || null);
         return;
       }
 
@@ -96,6 +99,7 @@ export default function Home() {
             setProcessingStatus(null);
             setYoutubeId(id); // Set youtubeId FIRST
             setProcessedVideoUrl(pollData.videoUrl); // Then set processedVideoUrl
+            setProcessedMeshUrl(pollData.meshUrl || null);
           } else if (pollData.status === 'not_found' || pollData.error) {
             // Check error
           }
@@ -290,6 +294,7 @@ export default function Home() {
               key={youtubeId}
               youtubeId={youtubeId}
               processedVideoUrl={processedVideoUrl}
+              processedMeshUrl={processedMeshUrl}
               onScoreUpdate={handleScoreUpdate}
               onScoreReset={handleScoreReset}
               onVideoEnded={() => {
