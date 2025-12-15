@@ -291,8 +291,51 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
         }
     }, [isDragging, handleMouseMove, handleMouseUp]);
 
+    const [isVideoReady, setIsVideoReady] = useState(false);
+
+    // Determine if game is ready to start (hide loading screen)
+    const isReady =
+        cameraLoaded &&
+        (!processedMeshUrl || actionMesh !== null) &&
+        (!processedVideoUrl || isVideoReady);
+
+    const isLoading = !isReady;
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full h-full relative">
+            {/* Global Loading Overlay */}
+            {isLoading && !cameraError && (
+                <div className="absolute inset-0 z-[60] bg-black/90 backdrop-blur-md flex flex-col items-center justify-center text-white space-y-6">
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                        <div className="absolute inset-0 flex items-center justify-center text-2xl">💃</div>
+                    </div>
+                    <div className="text-center space-y-2">
+                        <h3 className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
+                            Setting up Stage...
+                        </h3>
+                        <div className="flex flex-col gap-1 text-sm text-gray-400 font-mono">
+                            <div className="flex items-center gap-2">
+                                <span className={cameraLoaded ? "text-green-500" : "text-yellow-500"}>{cameraLoaded ? "✓" : "○"}</span>
+                                <span>Camera Access</span>
+                            </div>
+                            {processedMeshUrl && (
+                                <div className="flex items-center gap-2">
+                                    <span className={actionMesh ? "text-green-500" : "text-yellow-500"}>{actionMesh ? "✓" : "○"}</span>
+                                    <span>Downloading Choreography</span>
+                                </div>
+                            )}
+                            {processedVideoUrl && (
+                                <div className="flex items-center gap-2">
+                                    <span className={isVideoReady ? "text-green-500" : "text-yellow-500"}>{isVideoReady ? "✓" : "○"}</span>
+                                    <span>Buffering Video</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Floating Debug Info Panel */}
             {processedVideoUrl && showDebugInfo && (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-black/70 backdrop-blur-md rounded-lg border border-yellow-600/30 p-2.5 shadow-2xl max-w-md">
@@ -368,6 +411,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
                             controls={false}
                             autoPlay={false}
                             playsInline
+                            onLoadedData={() => setIsVideoReady(true)}
                             onPlay={() => {
                                 isRunning.current = true;
                                 setIsVideoPlaying(true);
