@@ -2,11 +2,11 @@ env:
   - variable: NEXT_PUBLIC_FIREBASE_API_KEY
     secret: next-public-firebase-api-key
   - variable: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-    secret: next-public-firebase-auth-domain
+    value: just-dance-piccollage.firebaseapp.com
   - variable: NEXT_PUBLIC_FIREBASE_PROJECT_ID
-    secret: next-public-firebase-project-id
+    value: just-dance-piccollage
   - variable: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-    secret: next-public-firebase-storage-bucket
+    value: just-dance-piccollage.firebasestorage.app
   - variable: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
     secret: next-public-firebase-messaging-sender-id
   - variable: NEXT_PUBLIC_FIREBASE_APP_ID
