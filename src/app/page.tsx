@@ -8,6 +8,7 @@ import DanceCanvas from '../components/DanceCanvas';
 import ScoreBoard from '../components/ScoreBoard';
 import SamplePlaylist from '../components/SamplePlaylist';
 import { saveScore } from '../utils/leaderboardService';
+import { saveToLibrary, cacheAssets } from '../utils/userLibrary';
 import Leaderboard from '../components/Leaderboard';
 
 export default function Home() {
@@ -69,7 +70,7 @@ function HomeContent() {
   const [processedMeshUrl, setProcessedMeshUrl] = useState<string | null>(null);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const startProcessing = async (id: string, fullUrl: string) => {
+  const startProcessing = async (id: string, fullUrl: string, title: string = 'Custom Video') => {
     setProcessingStatus('Starting processing...');
     setProcessedVideoUrl(null);
     setProcessedMeshUrl(null);
@@ -89,6 +90,17 @@ function HomeContent() {
         setYoutubeId(id); // Set youtubeId FIRST
         setProcessedVideoUrl(data.videoUrl); // Then set processedVideoUrl
         setProcessedMeshUrl(data.meshUrl || null);
+
+        // Cache and Save to Library
+        cacheAssets(data.videoUrl, data.meshUrl);
+        saveToLibrary({
+          id,
+          title,
+          originalUrl: fullUrl,
+          videoPath: data.videoUrl,
+          meshPath: data.meshUrl || '',
+          timestamp: Date.now()
+        });
         return;
       }
 
@@ -108,6 +120,17 @@ function HomeContent() {
             setYoutubeId(id); // Set youtubeId FIRST
             setProcessedVideoUrl(pollData.videoUrl); // Then set processedVideoUrl
             setProcessedMeshUrl(pollData.meshUrl || null);
+
+            // Cache and Save to Library
+            cacheAssets(pollData.videoUrl, pollData.meshUrl);
+            saveToLibrary({
+              id,
+              title,
+              originalUrl: fullUrl,
+              videoPath: pollData.videoUrl,
+              meshPath: pollData.meshUrl || '',
+              timestamp: Date.now()
+            });
           } else if (pollData.status === 'not_found' || pollData.error) {
             // Check error
           }
@@ -128,7 +151,7 @@ function HomeContent() {
     if (id) {
       setCurrentVideoTitle('Custom Video');
       setLastScore(0);
-      startProcessing(id, url);
+      startProcessing(id, url, 'Custom Video');
     } else {
       alert("Invalid YouTube URL");
     }
@@ -140,7 +163,7 @@ function HomeContent() {
     const id = parseVideoId(presetUrl);
     if (id) {
       setLastScore(0);
-      startProcessing(id, presetUrl);
+      startProcessing(id, presetUrl, title || 'Unknown Video');
     }
   };
 
@@ -153,7 +176,7 @@ function HomeContent() {
       const id = parseVideoId(customUrl);
       if (id) {
         setLastScore(0);
-        startProcessing(id, customUrl);
+        startProcessing(id, customUrl, 'Custom Video');
       }
     }
   }, [searchParams]);
@@ -317,7 +340,7 @@ function HomeContent() {
               onClick={() => { setYoutubeId(null); setScore(0); setLastScore(0); }}
               className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-red-600/20 hover:bg-red-600/80 text-white backdrop-blur-md rounded-full transition-all border border-red-500/50 hover:scale-105 shadow-xl z-50 font-semibold"
             >
-              Stop Session
+              Exit
             </button>
           </div>
         )}

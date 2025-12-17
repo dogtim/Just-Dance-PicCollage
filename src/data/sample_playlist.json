@@ -3,6 +3,11 @@
     "description": "Get moving with these sample dance routines!",
     "videos": [
         {
+            "title": "SPAGHETTI",
+            "url": "https://www.youtube.com/shorts/VuW4Fdyf5Lw",
+            "difficulty": "Medium"
+        },
+        {
             "title": "上車舞(SK月亮湖217)",
             "url": "https://www.youtube.com/shorts/PucaCQG8L18",
             "difficulty": "Easy"
