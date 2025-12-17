@@ -18,12 +18,18 @@ interface PlaylistData {
     videos: Video[];
 }
 
+// Module-level cache to persist state across component remounts
+let cachedPlaylist: PlaylistData | null = null;
+
 const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
-    const [playlist, setPlaylist] = useState<PlaylistData>(localPlaylist as PlaylistData);
+    const [playlist, setPlaylist] = useState<PlaylistData>(cachedPlaylist || (localPlaylist as PlaylistData));
     const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
+        // If we already have a cached playlist (from previous upload or fetch), don't refetch
+        if (cachedPlaylist) return;
+
         const fetchPlaylist = async () => {
             try {
                 const url = await getDownloadURL(ref(storage, 'sample_playlist.json'));
@@ -31,6 +37,7 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
                 if (response.ok) {
                     const data = await response.json();
                     setPlaylist(data);
+                    cachedPlaylist = data; // Update cache
                 }
             } catch (error: any) {
                 if (error.code === 'storage/unauthorized') {
@@ -68,10 +75,14 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
                         isCustom: true
                     }));
 
-                    setPlaylist(prev => ({
-                        ...prev,
-                        videos: [...prev.videos, ...newVideos]
-                    }));
+                    setPlaylist(prev => {
+                        const newState = {
+                            ...prev,
+                            videos: [...prev.videos, ...newVideos]
+                        };
+                        cachedPlaylist = newState; // Update cache
+                        return newState;
+                    });
                 }
             } catch (error) {
                 console.error("Error parsing custom playlist:", error);
@@ -218,7 +229,12 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
             "title": "YOONA - HOOT Dance Challenge",
             "url": "https://www.youtube.com/shorts/PymXEYUh9tI",
             "difficulty": "Medium"
-        }
+        },
+        {
+            "title": "Mr. Simple - Super Junior by Yumi",
+            "url": "https://www.youtube.com/shorts/aF5TlYE_JH4",
+            "difficulty": "Medium"
+        },
     ]
 }`}
                                         </pre>
