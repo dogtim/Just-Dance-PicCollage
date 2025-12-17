@@ -14,6 +14,7 @@ import {
     resultsToLandmarks,
     Landmark
 } from '../utils/poseComparison';
+import { getCachedAssetUrl } from '../utils/userLibrary';
 
 interface DanceCanvasProps {
     youtubeId: string | null;  // Allow null!
@@ -46,6 +47,21 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
         console.log('[ACTION MESH STATE] Changed to:', actionMesh ? `${actionMesh.length} checkpoints` : 'null');
         actionMeshRef.current = actionMesh; // Keep ref in sync
     }, [actionMesh]);
+
+    const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
+
+    // Resolve Video URL (Cache or Network)
+    useEffect(() => {
+        const resolveVideo = async () => {
+            if (processedVideoUrl) {
+                const url = await getCachedAssetUrl(processedVideoUrl);
+                setFinalVideoUrl(url);
+            } else {
+                setFinalVideoUrl(null);
+            }
+        };
+        resolveVideo();
+    }, [processedVideoUrl]);
 
     const processedVideoRef = useRef<HTMLVideoElement>(null);
     const lastScoredTimeRef = useRef<number>(0);
@@ -85,32 +101,38 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
         console.log('[ACTION MESH] useEffect triggered', { processedVideoUrl, youtubeId, processedMeshUrl });
 
         if (!processedVideoUrl || !youtubeId) {
-            console.log('[ACTION MESH] Skipping - missing processedVideoUrl or youtubeId');
-            //setActionMesh(null);
             return;
         }
 
-        const meshUrl = processedMeshUrl || `/processed/${youtubeId}_action_mesh.json`;
-        console.log('[ACTION MESH] Fetching from:', meshUrl);
+        const loadMesh = async () => {
+            let meshUrl = processedMeshUrl || `/processed/${youtubeId}_action_mesh.json`;
 
-        fetch(meshUrl)
-            .then(res => {
-                console.log('[ACTION MESH] Fetch response status:', res.status, res.statusText);
-                if (!res.ok) {
-                    throw new Error(`HTTP error! status: ${res.status}`);
-                }
-                return res.json();
-            })
-            .then(data => {
-                console.log('[ACTION MESH] Successfully loaded:', data);
-                console.log('[ACTION MESH] Checkpoints count:', data?.length);
-                setActionMesh(data);
-            })
-            .catch(err => {
-                console.error('[ACTION MESH] Failed to load action mesh:', err);
-                console.error('[ACTION MESH] Attempted URL:', meshUrl);
-                //setActionMesh(null);
-            });
+            // Try cache first
+            try {
+                meshUrl = await getCachedAssetUrl(meshUrl);
+            } catch (e) {
+                console.warn('Failed to resolve cache URL for mesh', e);
+            }
+
+            console.log('[ACTION MESH] Fetching from:', meshUrl);
+
+            fetch(meshUrl)
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error(`HTTP error! status: ${res.status}`);
+                    }
+                    return res.json();
+                })
+                .then(data => {
+                    console.log('[ACTION MESH] Successfully loaded:', data);
+                    setActionMesh(data);
+                })
+                .catch(err => {
+                    console.error('[ACTION MESH] Failed to load action mesh:', err);
+                });
+        };
+
+        loadMesh();
     }, [processedVideoUrl, youtubeId, processedMeshUrl]);
 
     // Initialize Detector
@@ -406,7 +428,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
 
                         <video
                             ref={processedVideoRef}
-                            src={processedVideoUrl}
+                            src={finalVideoUrl || processedVideoUrl || ''}
                             className="w-full h-full absolute top-0 left-0 object-contain"
                             controls={false}
                             autoPlay={false}

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import localPlaylist from '../data/sample_playlist.json';
 import { storage } from '@/lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
+import { getLibrary, LibraryItem } from '../utils/userLibrary';
 
 interface SamplePlaylistProps {
     onSelect: (url: string, title: string) => void;
@@ -24,7 +25,12 @@ let cachedPlaylist: PlaylistData | null = null;
 const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
     const [playlist, setPlaylist] = useState<PlaylistData>(cachedPlaylist || (localPlaylist as PlaylistData));
     const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
+    const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        setLibraryItems(getLibrary());
+    }, []);
 
     useEffect(() => {
         // If we already have a cached playlist (from previous upload or fetch), don't refetch
@@ -51,13 +57,23 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
     }, []);
 
     // Get unique difficulties and add 'All' and 'Custom Made'
-    const difficulties = ['All', ...Array.from(new Set(playlist.videos.map(v => v.difficulty))), 'Custom Made'];
+    const difficulties = ['All', ...Array.from(new Set(playlist.videos.map(v => v.difficulty))), 'Custom Made', 'My Library'];
 
-    const filteredVideos = selectedDifficulty === 'All'
-        ? playlist.videos
-        : selectedDifficulty === 'Custom Made'
-            ? playlist.videos.filter(v => v.isCustom)
-            : playlist.videos.filter(v => v.difficulty === selectedDifficulty);
+    let filteredVideos: Video[] = [];
+    if (selectedDifficulty === 'All') {
+        filteredVideos = playlist.videos;
+    } else if (selectedDifficulty === 'Custom Made') {
+        filteredVideos = playlist.videos.filter(v => v.isCustom);
+    } else if (selectedDifficulty === 'My Library') {
+        filteredVideos = libraryItems.map(item => ({
+            title: item.title,
+            url: item.originalUrl,
+            difficulty: 'Custom',
+            isCustom: true
+        }));
+    } else {
+        filteredVideos = playlist.videos.filter(v => v.difficulty === selectedDifficulty);
+    }
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -207,7 +223,9 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
                     })}
                     {filteredVideos.length === 0 && (
                         <div className="text-center py-12 text-gray-500">
-                            {selectedDifficulty === 'Custom Made' ? (
+                            {selectedDifficulty === 'My Library' ? (
+                                <p>No videos in your library yet. Play a custom video to save it here!</p>
+                            ) : selectedDifficulty === 'Custom Made' ? (
                                 <div className="flex flex-col items-center gap-6">
                                     <p className="text-lg font-medium text-gray-300">Upload a JSON playlist to see videos here.</p>
                                     <div className="w-full max-w-lg bg-gray-950 rounded-xl p-5 text-left overflow-x-auto border border-gray-800 shadow-2xl">
