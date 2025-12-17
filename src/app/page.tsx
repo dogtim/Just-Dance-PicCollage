@@ -188,7 +188,7 @@ function HomeContent() {
         <img
           src="/images/just_dance_2025.png"
           alt="Just Dance 2025 Background"
-          className="w-full h-full object-cover opacity-70"
+          className="w-full h-full object-cover opacity-70 border-40 border-black"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent" />
       </div>
@@ -234,6 +234,15 @@ function HomeContent() {
         </div>
       )}
 
+      {/* Global Loading Overlay */}
+      {processingStatus && (
+        <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm text-white animate-in fade-in duration-300 cursor-progress">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mb-4 shadow-[0_0_15px_rgba(168,85,247,0.5)]"></div>
+          <p className="text-xl font-bold animate-pulse tracking-wider">{processingStatus}</p>
+        </div>
+      )}
+
+
 
       {/* Navbar / Header - Only show when NOT playing */}
       {!youtubeId && (
@@ -242,7 +251,7 @@ function HomeContent() {
             <span className="text-4xl">🕺</span>
             <div className="flex flex-col">
               <h1 className="text-3xl font-extrabold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 hover:scale-105 transition-transform cursor-default">
-                JUST DANCE AI
+                JUST DANCE FOR EVERYONE
               </h1>
               {userName && <span className="text-xs text-gray-400 font-mono tracking-wide">Hi, {userName}</span>}
             </div>
@@ -282,20 +291,15 @@ function HomeContent() {
               </h2>
             </div>
 
-            <SamplePlaylist onSelect={handlePreset} />
+            <div className={`transition-opacity duration-300 ${processingStatus ? 'pointer-events-none opacity-50 select-none' : ''}`}>
+              <SamplePlaylist onSelect={handlePreset} />
+            </div>
           </div>
         )}
 
         {/* Game Active Section */}
         {youtubeId && (
           <div className="w-full h-full flex flex-col gap-4 animate-in zoom-in-95 duration-500 relative">
-
-            {processingStatus && (
-              <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm text-white animate-in catch-fade-in">
-                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-purple-500 mb-4"></div>
-                <p className="text-xl font-bold animate-pulse">{processingStatus}</p>
-              </div>
-            )}
 
 
             <DanceCanvas
