@@ -283,13 +283,7 @@ function HomeContent() {
 
         {/* Setup / Input Section */}
         {!youtubeId && (
-          <div className="w-full max-w-2xl flex flex-col gap-6 items-center mt-20 animate-in fade-in slide-in-from-bottom-10 duration-700">
-            <div className="text-center space-y-4">
-              <h2 className="text-5xl font-bold leading-tight">
-                Dance like no one is watching.<br />
-                <span className="text-gray-500">But AI is.</span>
-              </h2>
-            </div>
+          <div className="w-full max-w-2xl flex flex-col gap-6 items-center animate-in fade-in slide-in-from-bottom-10 duration-700">
 
             <div className={`transition-opacity duration-300 ${processingStatus ? 'pointer-events-none opacity-50 select-none' : ''}`}>
               <SamplePlaylist onSelect={handlePreset} />
