@@ -50,18 +50,43 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
 
     const [finalVideoUrl, setFinalVideoUrl] = useState<string | null>(null);
 
-    // Resolve Video URL (Cache or Network)
+    // Resolve Video URL (Network First -> Cache Fallback)
     useEffect(() => {
         const resolveVideo = async () => {
-            if (processedVideoUrl) {
-                const url = await getCachedAssetUrl(processedVideoUrl);
-                setFinalVideoUrl(url);
-            } else {
+            if (!processedVideoUrl) {
                 setFinalVideoUrl(null);
+                return;
             }
+
+            // If it's already a blob URL (passed from page), use it directly
+            if (processedVideoUrl.startsWith('blob:')) {
+                setFinalVideoUrl(processedVideoUrl);
+                return;
+            }
+
+            // Try to use the original URL (Network)
+            setFinalVideoUrl(processedVideoUrl);
+
+            // Note: If the network fails, we'll handle fallback in the onError handler of the video element
+            // or we could proactively check here. For smoother UX, let's assume network works unless error.
         };
         resolveVideo();
     }, [processedVideoUrl]);
+
+    // Fallback handler if video fails to load
+    const handleVideoError = async () => {
+        if (processedVideoUrl && !finalVideoUrl?.startsWith('blob:')) {
+            console.log('Video network load failed, trying cache...');
+            try {
+                const cachedUrl = await getCachedAssetUrl(processedVideoUrl);
+                if (cachedUrl && cachedUrl !== processedVideoUrl) {
+                    setFinalVideoUrl(cachedUrl);
+                }
+            } catch (e) {
+                console.warn('Cache fallback failed', e);
+            }
+        }
+    };
 
     const processedVideoRef = useRef<HTMLVideoElement>(null);
     const lastScoredTimeRef = useRef<number>(0);
@@ -104,32 +129,68 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
             return;
         }
 
-        const loadMesh = async () => {
+        const loadMesh = async (retries = 5) => {
             let meshUrl = processedMeshUrl || `/processed/${youtubeId}_action_mesh.json`;
 
-            // Try cache first
+            console.log(`[ACTION MESH] Fetching from: ${meshUrl} (Retries left: ${retries})`);
+
             try {
-                meshUrl = await getCachedAssetUrl(meshUrl);
-            } catch (e) {
-                console.warn('Failed to resolve cache URL for mesh', e);
-            }
+                // Network First - Try to fetch directly
+                const res = await fetch(meshUrl);
 
-            console.log('[ACTION MESH] Fetching from:', meshUrl);
+                if (!res.ok) {
+                    // If 404, it might be generating OR we might need to check cache
+                    // But if retries are high, maybe wait? 
+                    // Let's check cache immediately on failure if retries are running low or just do it?
+                    // User requested: Firebase First, Then Library (Cache).
 
-            fetch(meshUrl)
-                .then(res => {
-                    if (!res.ok) {
-                        throw new Error(`HTTP error! status: ${res.status}`);
+                    console.warn(`[ACTION MESH] Network fetch failed: ${res.status}. Checking cache...`);
+
+                    try {
+                        const cachedUrl = await getCachedAssetUrl(meshUrl);
+                        if (cachedUrl && cachedUrl !== meshUrl) {
+                            console.log('[ACTION MESH] Found in cache, using cached version.');
+                            const cacheRes = await fetch(cachedUrl);
+                            if (cacheRes.ok) {
+                                const data = await cacheRes.json();
+                                setActionMesh(data);
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('Cache check failed', e);
                     }
-                    return res.json();
-                })
-                .then(data => {
-                    console.log('[ACTION MESH] Successfully loaded:', data);
-                    setActionMesh(data);
-                })
-                .catch(err => {
-                    console.error('[ACTION MESH] Failed to load action mesh:', err);
-                });
+
+                    // If Cache failed or empty, proceed with Retry logic for Network
+                    if (retries > 0) {
+                        console.warn('[ACTION MESH] Retrying network in 1s...');
+                        setTimeout(() => loadMesh(retries - 1), 1000);
+                        return;
+                    }
+                    throw new Error(`HTTP error! status: ${res.status}`);
+                }
+
+                const data = await res.json();
+                console.log('[ACTION MESH] Successfully loaded from Network:', data);
+                setActionMesh(data);
+            } catch (err: any) {
+                console.error('[ACTION MESH] Error:', err);
+
+                // Final Cache Attempt if network completely failed (e.g. offline)
+                try {
+                    const cachedUrl = await getCachedAssetUrl(meshUrl);
+                    if (cachedUrl && cachedUrl !== meshUrl) {
+                        const cacheRes = await fetch(cachedUrl);
+                        const data = await cacheRes.json();
+                        setActionMesh(data);
+                        return;
+                    }
+                } catch (e) { }
+
+                if (retries > 0) {
+                    setTimeout(() => loadMesh(retries - 1), 1000);
+                }
+            }
         };
 
         loadMesh();
@@ -429,6 +490,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
                         <video
                             ref={processedVideoRef}
                             src={finalVideoUrl || processedVideoUrl || ''}
+                            onError={handleVideoError}
                             className="w-full h-full absolute top-0 left-0 object-contain"
                             controls={false}
                             autoPlay={false}

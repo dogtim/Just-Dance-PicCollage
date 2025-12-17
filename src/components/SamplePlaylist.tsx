@@ -57,7 +57,7 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
     }, []);
 
     // Get unique difficulties and add 'All' and 'Custom Made'
-    const difficulties = ['All', ...Array.from(new Set(playlist.videos.map(v => v.difficulty))), 'Custom Made', 'My Library'];
+    const difficulties = ['All', ...Array.from(new Set(playlist.videos.map(v => v.difficulty))), 'Custom Made', 'My Library(Cached)'];
 
     let filteredVideos: Video[] = [];
     if (selectedDifficulty === 'All') {
