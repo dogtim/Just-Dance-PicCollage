@@ -49,7 +49,7 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
         : playlist.videos.filter(v => v.difficulty === selectedDifficulty);
 
     return (
-        <div className="w-full max-w-4xl mt-12 bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-6 flex flex-col md:flex-row gap-6">
+        <div className="w-full max-w-4xl md:min-w-[800px] mt-12 bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-6 flex flex-col md:flex-row gap-6">
             {/* Left Navigation Panel (Difficulty Filter) */}
             <div className="w-full md:w-1/4 flex flex-col gap-2">
                 <h3 className="text-gray-400 font-semibold mb-3 text-xs uppercase tracking-wider">Difficulty</h3>
