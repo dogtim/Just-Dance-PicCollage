@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import localPlaylist from '../data/sample_playlist.json';
 import { storage } from '@/lib/firebase';
 import { ref, getDownloadURL } from 'firebase/storage';
@@ -11,6 +11,7 @@ interface Video {
     title: string;
     url: string;
     difficulty: string;
+    isCustom?: boolean;
 }
 
 interface PlaylistData {
@@ -20,6 +21,7 @@ interface PlaylistData {
 const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
     const [playlist, setPlaylist] = useState<PlaylistData>(localPlaylist as PlaylistData);
     const [selectedDifficulty, setSelectedDifficulty] = useState<string>('All');
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         const fetchPlaylist = async () => {
@@ -41,12 +43,48 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
         fetchPlaylist();
     }, []);
 
-    // Get unique difficulties and add 'All'
-    const difficulties = ['All', ...Array.from(new Set(playlist.videos.map(v => v.difficulty)))];
+    // Get unique difficulties and add 'All' and 'Custom Made'
+    const difficulties = ['All', ...Array.from(new Set(playlist.videos.map(v => v.difficulty))), 'Custom Made'];
 
     const filteredVideos = selectedDifficulty === 'All'
         ? playlist.videos
-        : playlist.videos.filter(v => v.difficulty === selectedDifficulty);
+        : selectedDifficulty === 'Custom Made'
+            ? playlist.videos.filter(v => v.isCustom)
+            : playlist.videos.filter(v => v.difficulty === selectedDifficulty);
+
+    const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const content = e.target?.result as string;
+                const customData = JSON.parse(content);
+
+                if (customData.videos && Array.isArray(customData.videos)) {
+                    const newVideos = customData.videos.map((v: Video) => ({
+                        ...v,
+                        isCustom: true
+                    }));
+
+                    setPlaylist(prev => ({
+                        ...prev,
+                        videos: [...prev.videos, ...newVideos]
+                    }));
+                }
+            } catch (error) {
+                console.error("Error parsing custom playlist:", error);
+                alert("Invalid JSON file");
+            }
+        };
+        reader.readAsText(file);
+
+        // Reset input value to allow uploading same file again
+        if (event.target) {
+            event.target.value = '';
+        }
+    };
 
     return (
         <div className="w-full max-w-4xl md:min-w-[800px] mt-12 bg-gray-900/50 backdrop-blur-sm rounded-2xl border border-gray-800 p-6 flex flex-col md:flex-row gap-6">
@@ -70,9 +108,29 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
 
             {/* Right Content Panel (Filtered Videos) */}
             <div className="flex-1">
-                <h3 className="text-gray-400 font-semibold mb-4 text-xs uppercase tracking-wider">
-                    {selectedDifficulty === 'All' ? 'All Videos' : `${selectedDifficulty} Videos`}
-                </h3>
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-gray-400 font-semibold text-xs uppercase tracking-wider">
+                        {selectedDifficulty === 'All' ? 'All Videos' : `${selectedDifficulty} Videos`}
+                    </h3>
+                    {selectedDifficulty === 'Custom Made' && (
+                        <div>
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                                accept=".json"
+                                className="hidden"
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-medium transition-colors"
+                            >
+                                Upload Playlist
+                            </button>
+                        </div>
+                    )}
+                </div>
+
                 <div className="flex flex-col gap-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                     {filteredVideos.map((video, idx) => {
                         let styleConfig = {
@@ -122,6 +180,12 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
                                                 video.difficulty === 'Medium' ? 'text-pink-400' :
                                                     'text-yellow-400'
                                         }>{video.difficulty}</span>
+                                        {video.isCustom && (
+                                            <>
+                                                <span className="w-1 h-1 rounded-full bg-gray-600"></span>
+                                                <span className="text-blue-400">Custom</span>
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                                 <div className={`text-gray-600 ${styleConfig.textColor} transition-colors text-sm font-medium whitespace-nowrap opacity-0 group-hover:opacity-100`}>
@@ -132,7 +196,37 @@ const SamplePlaylist: React.FC<SamplePlaylistProps> = ({ onSelect }) => {
                     })}
                     {filteredVideos.length === 0 && (
                         <div className="text-center py-12 text-gray-500">
-                            No videos found for this difficulty.
+                            {selectedDifficulty === 'Custom Made' ? (
+                                <div className="flex flex-col items-center gap-6">
+                                    <p className="text-lg font-medium text-gray-300">Upload a JSON playlist to see videos here.</p>
+                                    <div className="w-full max-w-lg bg-gray-950 rounded-xl p-5 text-left overflow-x-auto border border-gray-800 shadow-2xl">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <p className="text-gray-400 text-xs font-bold uppercase tracking-wider">Example Format (playlist.json)</p>
+                                            <span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-1 rounded">JSON</span>
+                                        </div>
+                                        <pre className="text-xs text-blue-300 font-mono leading-relaxed p-2">
+                                            {`{
+    "playlist_title": "Tim's Pack",
+    "description": "Young Forty",
+    "videos": [
+        {
+            "title": "GANGNAM STYLE",
+            "url": "https://www.youtube.com/shorts/52fgfXjW2rA",
+            "difficulty": "Easy"
+        },
+        {
+            "title": "YOONA - HOOT Dance Challenge",
+            "url": "https://www.youtube.com/shorts/PymXEYUh9tI",
+            "difficulty": "Medium"
+        }
+    ]
+}`}
+                                        </pre>
+                                    </div>
+                                </div>
+                            ) : (
+                                'No videos found for this difficulty.'
+                            )}
                         </div>
                     )}
                 </div>

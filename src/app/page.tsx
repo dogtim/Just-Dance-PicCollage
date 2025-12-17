@@ -317,7 +317,7 @@ function HomeContent() {
               onClick={() => { setYoutubeId(null); setScore(0); setLastScore(0); }}
               className="absolute bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-red-600/20 hover:bg-red-600/80 text-white backdrop-blur-md rounded-full transition-all border border-red-500/50 hover:scale-105 shadow-xl z-50 font-semibold"
             >
-              Stop Session
+              Exit
             </button>
           </div>
         )}
