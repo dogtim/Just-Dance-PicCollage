@@ -13,6 +13,8 @@ interface SettingsContextType {
     setShowDebugInfo: (show: boolean) => void;
     userName: string;
     setUserName: (name: string) => void;
+    poseAlpha: number;
+    setPoseAlpha: (alpha: number) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -23,6 +25,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [startDelay, setStartDelay] = useState<number>(3);
     const [showDebugInfo, setShowDebugInfo] = useState<boolean>(false);
     const [userName, setUserName] = useState<string>('');
+    const [poseAlpha, setPoseAlpha] = useState<number>(0.3);
 
     useEffect(() => {
         // Run only on client-side mount
@@ -44,6 +47,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const savedName = localStorage.getItem('just-dance-username');
         if (savedName) {
             setUserName(savedName);
+        }
+
+        const savedAlpha = localStorage.getItem('just-dance-pose-alpha');
+        if (savedAlpha) {
+            setPoseAlpha(parseFloat(savedAlpha));
         }
     }, []);
 
@@ -67,6 +75,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('just-dance-username', name);
     };
 
+    const updatePoseAlpha = (alpha: number) => {
+        setPoseAlpha(alpha);
+        localStorage.setItem('just-dance-pose-alpha', alpha.toString());
+    };
+
     return (
         <SettingsContext.Provider value={{
             detectionModel,
@@ -76,7 +89,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             showDebugInfo,
             setShowDebugInfo: updateShowDebugInfo,
             userName,
-            setUserName: updateUserName
+            setUserName: updateUserName,
+            poseAlpha,
+            setPoseAlpha: updatePoseAlpha
         }}>
             {children}
         </SettingsContext.Provider>

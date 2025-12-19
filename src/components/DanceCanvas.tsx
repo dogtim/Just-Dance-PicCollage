@@ -100,7 +100,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
     const [panelPosition, setPanelPosition] = useState({ x: 0, y: 112 }); // Default: top-28 (112px)
     const [isDragging, setIsDragging] = useState(false);
     const dragStartRef = useRef({ x: 0, y: 0 });
-    const { detectionModel, startDelay, showDebugInfo } = useSettings();
+    const { detectionModel, startDelay, showDebugInfo, poseAlpha } = useSettings();
     const [countdown, setCountdown] = useState<number | null>(null);
 
     // Countdown Timer Logic
@@ -206,7 +206,7 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({ youtubeId, onScoreUpdate, onS
                 const ctx = canvasRef.current.getContext('2d');
                 if (ctx) {
                     const color = detectionModel === 'Meta 3D Body' ? '#00FFFF' : '#00FF00';
-                    drawPose(ctx, results, color);
+                    drawPose(ctx, results, color, poseAlpha);
 
                     // NEW: Pose comparison and scoring (use ref to get latest value)
                     if (actionMeshRef.current && processedVideoUrl && results.poseLandmarks) {

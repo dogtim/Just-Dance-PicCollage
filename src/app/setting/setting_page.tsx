@@ -6,7 +6,13 @@ import { useRouter } from 'next/navigation';
 import { useSettings, DetectionModel } from '../../context/SettingsContext';
 
 export default function Setting() {
-    const { detectionModel, setDetectionModel, startDelay, setStartDelay, showDebugInfo, setShowDebugInfo, userName, setUserName } = useSettings();
+    const {
+        detectionModel, setDetectionModel,
+        startDelay, setStartDelay,
+        showDebugInfo, setShowDebugInfo,
+        userName, setUserName,
+        poseAlpha, setPoseAlpha
+    } = useSettings();
     const [url, setUrl] = useState('');
     const router = useRouter();
 
@@ -97,6 +103,31 @@ export default function Setting() {
                                 >
                                     Disabled
                                 </button>
+                            </div>
+                        </div>
+
+                        {/* Skeleton Transparency Slider */}
+                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
+                            <div className="flex justify-between items-center">
+                                <label className="text-lg font-semibold text-gray-200">Skeleton Transparency</label>
+                                <span className="text-purple-400 font-mono font-bold bg-purple-400/10 px-2 py-0.5 rounded text-sm">
+                                    {(poseAlpha * 100).toFixed(0)}%
+                                </span>
+                            </div>
+                            <p className="text-sm text-gray-500 mb-4">Adjust the visibility of the real-time pose skeleton overlay.</p>
+
+                            <div className="flex items-center gap-4 group">
+                                <span className="text-xs text-gray-500">Clear</span>
+                                <input
+                                    type="range"
+                                    min="0"
+                                    max="1"
+                                    step="0.05"
+                                    value={poseAlpha}
+                                    onChange={(e) => setPoseAlpha(parseFloat(e.target.value))}
+                                    className="flex-1 h-2 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500 hover:accent-purple-400 transition-all"
+                                />
+                                <span className="text-xs text-gray-500">Solid</span>
                             </div>
                         </div>
 

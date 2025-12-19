@@ -124,12 +124,13 @@ export const createDetector = (modelName: string): IPoseDetector => {
 };
 
 // Drawing Utilities can be exported here too
-export const drawPose = (ctx: CanvasRenderingContext2D, results: Results, color: string = '#00FF00') => {
+export const drawPose = (ctx: CanvasRenderingContext2D, results: Results, color: string = '#00FF00', alpha: number = 0.3) => {
     const width = ctx.canvas.width;
     const height = ctx.canvas.height;
 
     ctx.save();
     ctx.clearRect(0, 0, width, height);
+    ctx.globalAlpha = alpha;
 
     if (results && results.poseLandmarks) {
         ctx.strokeStyle = color;
