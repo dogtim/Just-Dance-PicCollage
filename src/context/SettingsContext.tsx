@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export type DetectionModel = 'Google Media Pipe' | 'Meta 3D Body';
+export type GameMode = 'Default' | 'Random';
 
 interface SettingsContextType {
     detectionModel: DetectionModel;
@@ -15,6 +16,8 @@ interface SettingsContextType {
     setUserName: (name: string) => void;
     poseAlpha: number;
     setPoseAlpha: (alpha: number) => void;
+    gameMode: GameMode;
+    setGameMode: (mode: GameMode) => void;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -26,6 +29,7 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
     const [showDebugInfo, setShowDebugInfo] = useState<boolean>(false);
     const [userName, setUserName] = useState<string>('');
     const [poseAlpha, setPoseAlpha] = useState<number>(0.3);
+    const [gameMode, setGameMode] = useState<GameMode>('Default');
 
     useEffect(() => {
         // Run only on client-side mount
@@ -52,6 +56,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         const savedAlpha = localStorage.getItem('just-dance-pose-alpha');
         if (savedAlpha) {
             setPoseAlpha(parseFloat(savedAlpha));
+        }
+
+        const savedGameMode = localStorage.getItem('just-dance-game-mode');
+        if (savedGameMode && (savedGameMode === 'Default' || savedGameMode === 'Random')) {
+            setGameMode(savedGameMode as GameMode);
         }
     }, []);
 
@@ -80,6 +89,11 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem('just-dance-pose-alpha', alpha.toString());
     };
 
+    const updateGameMode = (mode: GameMode) => {
+        setGameMode(mode);
+        localStorage.setItem('just-dance-game-mode', mode);
+    };
+
     return (
         <SettingsContext.Provider value={{
             detectionModel,
@@ -91,7 +105,9 @@ export const SettingsProvider = ({ children }: { children: ReactNode }) => {
             userName,
             setUserName: updateUserName,
             poseAlpha,
-            setPoseAlpha: updatePoseAlpha
+            setPoseAlpha: updatePoseAlpha,
+            gameMode,
+            setGameMode: updateGameMode
         }}>
             {children}
         </SettingsContext.Provider>

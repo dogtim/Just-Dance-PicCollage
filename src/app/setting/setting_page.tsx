@@ -11,7 +11,8 @@ export default function Setting() {
         startDelay, setStartDelay,
         showDebugInfo, setShowDebugInfo,
         userName, setUserName,
-        poseAlpha, setPoseAlpha
+        poseAlpha, setPoseAlpha,
+        gameMode, setGameMode
     } = useSettings();
     const [url, setUrl] = useState('');
     const router = useRouter();
@@ -102,6 +103,33 @@ export default function Setting() {
                                         }`}
                                 >
                                     Disabled
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Game Mode */}
+                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
+                            <label className="text-lg font-semibold text-gray-200">Game Mode</label>
+                            <p className="text-sm text-gray-500 mb-2">Shuffle choreography or follow the original routine.</p>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => setGameMode('Default')}
+                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${gameMode === 'Default'
+                                        ? 'bg-purple-600/20 text-purple-400 border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                                        : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700'
+                                        }`}
+                                >
+                                    Default
+                                </button>
+                                <button
+                                    onClick={() => setGameMode('Random')}
+                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${gameMode === 'Random'
+                                        ? 'bg-purple-600/20 text-purple-400 border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                                        : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700'
+                                        }`}
+                                >
+                                    Random
                                 </button>
                             </div>
                         </div>
