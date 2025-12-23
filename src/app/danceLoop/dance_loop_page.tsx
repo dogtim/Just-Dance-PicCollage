@@ -48,6 +48,34 @@ export default function DanceLoop() {
         }
     }, [url]);
 
+    const handleExportJson = () => {
+        if (!url || slices.length === 0) {
+            alert('Nothing to export! Please load a video and add some slices first.');
+            return;
+        }
+
+        const data: ImportData = {
+            video_url: url,
+            video_slices: slices.map(s => ({
+                ...s,
+                start: s.start.toString(),
+                end: s.end.toString()
+            }))
+        };
+
+        const jsonString = JSON.stringify(data, null, 4);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const exportUrl = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = exportUrl;
+        link.download = `dance-loop-${videoId || 'playlist'}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(exportUrl);
+    };
+
     const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -62,7 +90,11 @@ export default function DanceLoop() {
                     if (id) setVideoId(id);
                 }
                 if (data.video_slices) {
-                    setSlices(data.video_slices);
+                    setSlices(data.video_slices.map(s => ({
+                        ...s,
+                        start: s.start.toString(),
+                        end: s.end.toString()
+                    })));
                 }
             } catch (err) {
                 alert('Failed to parse JSON file. Please ensure it follows the correct format.');
@@ -156,7 +188,13 @@ export default function DanceLoop() {
                             onClick={() => fileInputRef.current?.click()}
                             className="px-5 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-xl transition-all border border-purple-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
                         >
-                            <span>📥</span> Import JSON
+                            <span>📥</span> Import
+                        </button>
+                        <button
+                            onClick={handleExportJson}
+                            className="px-5 py-2.5 bg-pink-600/20 hover:bg-pink-600/30 text-pink-400 rounded-xl transition-all border border-pink-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>📤</span> Export
                         </button>
                         <Link href="/" className="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl transition-all border border-gray-700 backdrop-blur-sm text-sm font-medium">
                             Back to Home
@@ -201,8 +239,8 @@ export default function DanceLoop() {
                                             key={index}
                                             onClick={() => applySlice(slice, index)}
                                             className={`p-4 rounded-2xl border transition-all text-left flex justify-between items-center group ${activeSliceIndex === index
-                                                    ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
-                                                    : 'bg-gray-800/40 border-gray-700 hover:bg-gray-700/60 hover:border-gray-600'
+                                                ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                                                : 'bg-gray-800/40 border-gray-700 hover:bg-gray-700/60 hover:border-gray-600'
                                                 }`}
                                         >
                                             <div className="flex flex-col">
@@ -308,7 +346,52 @@ export default function DanceLoop() {
                                     </div>
                                 </div>
 
-                                <div className="pt-4 border-t border-gray-800/50">
+                                <div className="pt-6 border-t border-gray-800/50 space-y-4">
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest ml-1">Slice Title</div>
+                                        <div className="flex gap-2">
+                                            <input
+                                                type="text"
+                                                placeholder="e.g. Chorus 1, Intro..."
+                                                className="flex-1 bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-white outline-none focus:border-purple-500/50 transition-all"
+                                                id="new-slice-title"
+                                                onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') {
+                                                        const input = e.currentTarget;
+                                                        if (input.value.trim()) {
+                                                            const newSlice: VideoSlice = {
+                                                                title: input.value.trim(),
+                                                                start: startTime,
+                                                                end: endTime
+                                                            };
+                                                            setSlices(prev => [...prev, newSlice]);
+                                                            input.value = '';
+                                                        }
+                                                    }
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => {
+                                                    const input = document.getElementById('new-slice-title') as HTMLInputElement;
+                                                    if (input.value.trim()) {
+                                                        const newSlice: VideoSlice = {
+                                                            title: input.value.trim(),
+                                                            start: startTime,
+                                                            end: endTime
+                                                        };
+                                                        setSlices(prev => [...prev, newSlice]);
+                                                        input.value = '';
+                                                    } else {
+                                                        alert('Please enter a title for the slice');
+                                                    }
+                                                }}
+                                                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-purple-400 rounded-xl transition-all border border-gray-700 text-xs font-bold uppercase tracking-wider"
+                                            >
+                                                Add
+                                            </button>
+                                        </div>
+                                    </div>
+
                                     <p className="text-xs text-gray-500 leading-relaxed italic">
                                         Pro tip: Use the YouTube player controls to find your exact timestamps. The video will automatically loop back to {startTime}s once it hits {endTime}s.
                                     </p>
