@@ -28,6 +28,14 @@ export default function DanceLoop() {
     const loopIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    const handleReset = () => {
+        if (slices.length === 0) return;
+        if (window.confirm('Are you sure you want to clear all slices? This action cannot be undone.')) {
+            setSlices([]);
+            setActiveSliceIndex(null);
+        }
+    };
+
     const extractVideoId = (url: string) => {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([^#&?]*).*/;
         const match = url.match(regExp);
@@ -184,6 +192,12 @@ export default function DanceLoop() {
                             ref={fileInputRef}
                             className="hidden"
                         />
+                        <button
+                            onClick={handleReset}
+                            className="px-5 py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-all border border-red-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>🗑️</span> Reset
+                        </button>
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="px-5 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-xl transition-all border border-purple-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
