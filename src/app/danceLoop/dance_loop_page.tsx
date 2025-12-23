@@ -3,7 +3,17 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import YouTube, { YouTubePlayer, YouTubeProps } from 'react-youtube';
-import { SettingSection } from '../../components/Setting/SettingSection';
+
+interface VideoSlice {
+    title: string;
+    start: string | number;
+    end: string | number;
+}
+
+interface ImportData {
+    video_url: string;
+    video_slices: VideoSlice[];
+}
 
 export default function DanceLoop() {
     const [url, setUrl] = useState('');
@@ -11,8 +21,12 @@ export default function DanceLoop() {
     const [startTime, setStartTime] = useState<number>(0);
     const [endTime, setEndTime] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [slices, setSlices] = useState<VideoSlice[]>([]);
+    const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null);
+
     const playerRef = useRef<YouTubePlayer | null>(null);
     const loopIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const extractVideoId = (url: string) => {
         const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([^#&?]*).*/;
@@ -20,20 +34,63 @@ export default function DanceLoop() {
         return (match && match[2].length === 11) ? match[2] : null;
     };
 
-    const handleLoadVideo = () => {
-        const id = extractVideoId(url);
+    const handleLoadVideo = useCallback((newUrl?: string) => {
+        const targetUrl = newUrl !== undefined ? newUrl : url;
+        const id = extractVideoId(targetUrl);
         if (id) {
             setVideoId(id);
-            // Reset times when new video loads
+            if (newUrl !== undefined) setUrl(newUrl);
+            // Reset times when new video loads manually
             setStartTime(0);
             setEndTime(0);
+            setSlices([]);
+            setActiveSliceIndex(null);
+        }
+    }, [url]);
+
+    const handleImportJson = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const data: ImportData = JSON.parse(event.target?.result as string);
+                if (data.video_url) {
+                    setUrl(data.video_url);
+                    const id = extractVideoId(data.video_url);
+                    if (id) setVideoId(id);
+                }
+                if (data.video_slices) {
+                    setSlices(data.video_slices);
+                }
+            } catch (err) {
+                alert('Failed to parse JSON file. Please ensure it follows the correct format.');
+                console.error(err);
+            }
+        };
+        reader.readAsText(file);
+    };
+
+    const applySlice = (slice: VideoSlice, index: number) => {
+        const start = parseFloat(slice.start.toString());
+        const end = parseFloat(slice.end.toString());
+        setStartTime(start);
+        setEndTime(end);
+        setActiveSliceIndex(index);
+
+        if (playerRef.current) {
+            playerRef.current.seekTo(start, true);
+            playerRef.current.playVideo();
         }
     };
 
     const onPlayerReady: YouTubeProps['onReady'] = (event) => {
         playerRef.current = event.target;
-        const duration = event.target.getDuration();
-        setEndTime(duration);
+        if (endTime === 0) {
+            const duration = event.target.getDuration();
+            setEndTime(duration);
+        }
     };
 
     const onPlayerStateChange: YouTubeProps['onStateChange'] = (event) => {
@@ -87,9 +144,24 @@ export default function DanceLoop() {
                             Dance Loop
                         </h1>
                     </div>
-                    <Link href="/" className="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl transition-all border border-gray-700 backdrop-blur-sm text-sm font-medium">
-                        Back to Home
-                    </Link>
+                    <div className="flex items-center gap-4">
+                        <input
+                            type="file"
+                            accept=".json"
+                            onChange={handleImportJson}
+                            ref={fileInputRef}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-5 py-2.5 bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 rounded-xl transition-all border border-purple-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>📥</span> Import JSON
+                        </button>
+                        <Link href="/" className="px-5 py-2.5 bg-gray-800/80 hover:bg-gray-700 rounded-xl transition-all border border-gray-700 backdrop-blur-sm text-sm font-medium">
+                            Back to Home
+                        </Link>
+                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -112,10 +184,43 @@ export default function DanceLoop() {
                                         <span className="text-4xl text-gray-500">📺</span>
                                     </div>
                                     <h2 className="text-xl font-semibold text-gray-300 mb-2">Ready to practice?</h2>
-                                    <p className="text-gray-500 max-w-sm">Paste a YouTube URL or Shorts link on the right to start looping your favorite choreography.</p>
+                                    <p className="text-gray-500 max-w-sm">Paste a YouTube URL or import a JSON playlist to start looping your practice sessions.</p>
                                 </div>
                             )}
                         </div>
+
+                        {/* Slices Display */}
+                        {slices.length > 0 && (
+                            <div className="bg-gray-900/40 rounded-3xl p-6 border border-gray-800/50">
+                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1 flex items-center gap-2">
+                                    <span>📑</span> Video Slices
+                                </h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    {slices.map((slice, index) => (
+                                        <button
+                                            key={index}
+                                            onClick={() => applySlice(slice, index)}
+                                            className={`p-4 rounded-2xl border transition-all text-left flex justify-between items-center group ${activeSliceIndex === index
+                                                    ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                                                    : 'bg-gray-800/40 border-gray-700 hover:bg-gray-700/60 hover:border-gray-600'
+                                                }`}
+                                        >
+                                            <div className="flex flex-col">
+                                                <span className={`font-bold text-sm ${activeSliceIndex === index ? 'text-purple-300' : 'text-gray-200'}`}>
+                                                    {slice.title}
+                                                </span>
+                                                <span className="text-xs text-gray-500 mt-1 font-mono">
+                                                    {slice.start}s - {slice.end}s
+                                                </span>
+                                            </div>
+                                            <span className={`text-xl transition-transform group-hover:scale-110 ${activeSliceIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                ▶️
+                                            </span>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
                     {/* Controls Section */}
@@ -134,7 +239,7 @@ export default function DanceLoop() {
                                         onKeyDown={(e) => e.key === 'Enter' && handleLoadVideo()}
                                     />
                                     <button
-                                        onClick={handleLoadVideo}
+                                        onClick={() => handleLoadVideo()}
                                         className="p-2.5 bg-purple-600 hover:bg-purple-500 rounded-xl transition-all shadow-lg shadow-purple-900/20"
                                     >
                                         <span className="text-sm font-bold px-2">Load</span>
@@ -167,7 +272,10 @@ export default function DanceLoop() {
                                             step="0.1"
                                             min="0"
                                             value={startTime}
-                                            onChange={(e) => setStartTime(Math.max(0, parseFloat(e.target.value) || 0))}
+                                            onChange={(e) => {
+                                                setStartTime(Math.max(0, parseFloat(e.target.value) || 0));
+                                                setActiveSliceIndex(null);
+                                            }}
                                             className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 transition-all font-mono text-sm"
                                         />
                                     </div>
@@ -191,7 +299,10 @@ export default function DanceLoop() {
                                             step="0.1"
                                             min="0"
                                             value={endTime}
-                                            onChange={(e) => setEndTime(Math.max(0, parseFloat(e.target.value) || 0))}
+                                            onChange={(e) => {
+                                                setEndTime(Math.max(0, parseFloat(e.target.value) || 0));
+                                                setActiveSliceIndex(null);
+                                            }}
                                             className="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500/50 transition-all font-mono text-sm"
                                         />
                                     </div>
@@ -221,4 +332,5 @@ export default function DanceLoop() {
         </div>
     );
 }
+
 
