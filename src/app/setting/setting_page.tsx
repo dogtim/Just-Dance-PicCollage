@@ -1,9 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useSettings, DetectionModel } from '../../context/SettingsContext';
+import { useSettings, DetectionModel, GameMode } from '../../context/SettingsContext';
+import { SettingSection } from '../../components/Setting/SettingSection';
+import { CustomVideoInput } from '../../components/Setting/CustomVideoInput';
 
 export default function Setting() {
     const {
@@ -14,8 +16,15 @@ export default function Setting() {
         poseAlpha, setPoseAlpha,
         gameMode, setGameMode
     } = useSettings();
+
     const [url, setUrl] = useState('');
     const router = useRouter();
+
+    const handleStartParty = useCallback(() => {
+        if (url) {
+            router.push(`/?customUrl=${encodeURIComponent(url)}`);
+        }
+    }, [url, router]);
 
     return (
         <div className="min-h-screen bg-black text-white font-sans p-8">
@@ -32,22 +41,24 @@ export default function Setting() {
                 <div className="bg-gray-900/50 backdrop-blur rounded-2xl p-8 border border-gray-800">
                     <div className="space-y-6">
                         {/* User Name */}
-                        <div className="flex flex-col gap-2">
-                            <label className="text-lg font-semibold text-gray-200">DisplayName</label>
-                            <p className="text-sm text-gray-500 mb-2">How you want to be addressed.</p>
-
+                        <SettingSection
+                            title="DisplayName"
+                            description="How you want to be addressed."
+                            isFirst
+                        >
                             <input
                                 type="text"
                                 value={userName}
                                 onChange={(e) => setUserName(e.target.value)}
                                 className="w-full md:w-1/2 bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-white outline-none focus:border-purple-500 transition-colors"
                             />
-                        </div>
+                        </SettingSection>
 
-                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
-                            <label className="text-lg font-semibold text-gray-200">Detection Model</label>
-                            <p className="text-sm text-gray-500 mb-2">Choose the AI model used for pose estimation.</p>
-
+                        {/* Detection Model */}
+                        <SettingSection
+                            title="Detection Model"
+                            description="Choose the AI model used for pose estimation."
+                        >
                             <select
                                 value={detectionModel}
                                 onChange={(e) => setDetectionModel(e.target.value as DetectionModel)}
@@ -56,13 +67,13 @@ export default function Setting() {
                                 <option value="Google Media Pipe">Google Media Pipe</option>
                                 <option value="Meta 3D Body">Meta 3D Body</option>
                             </select>
-                        </div>
+                        </SettingSection>
 
-                        {/* Countdown Timer Layout */}
-                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
-                            <label className="text-lg font-semibold text-gray-200">Start Delay</label>
-                            <p className="text-sm text-gray-500 mb-2">Set the countdown timer before the dance begins.</p>
-
+                        {/* Start Delay */}
+                        <SettingSection
+                            title="Start Delay"
+                            description="Set the countdown timer before the dance begins."
+                        >
                             <div className="grid grid-cols-3 md:flex gap-4">
                                 {[3, 5, 10].map((time) => (
                                     <button
@@ -78,13 +89,13 @@ export default function Setting() {
                                     </button>
                                 ))}
                             </div>
-                        </div>
+                        </SettingSection>
 
-                        {/* Debug Info Toggle */}
-                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
-                            <label className="text-lg font-semibold text-gray-200">Debug Dashboard</label>
-                            <p className="text-sm text-gray-500 mb-2">Show detailed pose estimation data and accuracy metrics.</p>
-
+                        {/* Debug Dashboard */}
+                        <SettingSection
+                            title="Debug Dashboard"
+                            description="Show detailed pose estimation data and accuracy metrics."
+                        >
                             <div className="flex gap-4">
                                 <button
                                     onClick={() => setShowDebugInfo(true)}
@@ -105,45 +116,39 @@ export default function Setting() {
                                     Disabled
                                 </button>
                             </div>
-                        </div>
+                        </SettingSection>
 
                         {/* Game Mode */}
-                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
-                            <label className="text-lg font-semibold text-gray-200">Game Mode</label>
-                            <p className="text-sm text-gray-500 mb-2">Shuffle choreography or follow the original routine.</p>
-
+                        <SettingSection
+                            title="Game Mode"
+                            description="Shuffle choreography or follow the original routine."
+                        >
                             <div className="flex gap-4">
-                                <button
-                                    onClick={() => setGameMode('Default')}
-                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${gameMode === 'Default'
-                                        ? 'bg-purple-600/20 text-purple-400 border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                                        : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700'
-                                        }`}
-                                >
-                                    Default
-                                </button>
-                                <button
-                                    onClick={() => setGameMode('Random')}
-                                    className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${gameMode === 'Random'
-                                        ? 'bg-purple-600/20 text-purple-400 border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
-                                        : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700'
-                                        }`}
-                                >
-                                    Random
-                                </button>
+                                {(['Default', 'Random'] as GameMode[]).map((mode) => (
+                                    <button
+                                        key={mode}
+                                        onClick={() => setGameMode(mode)}
+                                        className={`px-6 py-2 rounded-lg font-medium transition-all duration-200 ${gameMode === mode
+                                            ? 'bg-purple-600/20 text-purple-400 border border-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)]'
+                                            : 'bg-gray-800 text-gray-400 border border-gray-700 hover:bg-gray-700'
+                                            }`}
+                                    >
+                                        {mode}
+                                    </button>
+                                ))}
                             </div>
-                        </div>
+                        </SettingSection>
 
                         {/* Skeleton Transparency Slider */}
-                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
-                            <div className="flex justify-between items-center">
-                                <label className="text-lg font-semibold text-gray-200">Skeleton Transparency</label>
+                        <SettingSection
+                            title="Skeleton Transparency"
+                            description="Adjust the visibility of the real-time pose skeleton overlay."
+                        >
+                            <div className="flex justify-between items-center mb-1">
                                 <span className="text-purple-400 font-mono font-bold bg-purple-400/10 px-2 py-0.5 rounded text-sm">
                                     {(poseAlpha * 100).toFixed(0)}%
                                 </span>
                             </div>
-                            <p className="text-sm text-gray-500 mb-4">Adjust the visibility of the real-time pose skeleton overlay.</p>
-
                             <div className="flex items-center gap-4 group">
                                 <span className="text-xs text-gray-500">Clear</span>
                                 <input
@@ -157,37 +162,19 @@ export default function Setting() {
                                 />
                                 <span className="text-xs text-gray-500">Solid</span>
                             </div>
-                        </div>
+                        </SettingSection>
 
                         {/* Custom Video Input */}
-                        <div className="flex flex-col gap-2 pt-6 border-t border-gray-800">
-                            <label className="text-lg font-semibold text-gray-200">Custom Dance Video</label>
-                            <p className="text-sm text-gray-500 mb-2">Process any YouTube video into a dance routine. Custom tracks are saved locally for quick access.</p>
-
-                            <div className="flex w-full gap-2 p-2 bg-gray-900 rounded-xl border border-gray-700 shadow-inner focus-within:border-purple-500 transition-colors">
-                                <input
-                                    type="text"
-                                    placeholder="Paste YouTube URL..."
-                                    className="flex-1 bg-transparent px-4 py-3 outline-none text-base placeholder:text-gray-600 w-full"
-                                    onChange={(e) => setUrl(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && url) {
-                                            router.push(`/?customUrl=${encodeURIComponent(url)}`);
-                                        }
-                                    }}
-                                />
-                                <button
-                                    onClick={() => {
-                                        if (url) {
-                                            router.push(`/?customUrl=${encodeURIComponent(url)}`);
-                                        }
-                                    }}
-                                    className="px-6 py-2 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-bold text-sm hover:opacity-90 transition-opacity whitespace-nowrap"
-                                >
-                                    Let's Party
-                                </button>
-                            </div>
-                        </div>
+                        <SettingSection
+                            title="Custom Dance Video"
+                            description="Process any YouTube video into a dance routine. Custom tracks are saved locally for quick access."
+                        >
+                            <CustomVideoInput
+                                url={url}
+                                setUrl={setUrl}
+                                onStart={handleStartParty}
+                            />
+                        </SettingSection>
                     </div>
                 </div>
             </div>

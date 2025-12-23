@@ -18,6 +18,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ userName }) => {
             </div>
 
             <div className="flex items-center gap-4">
+                <a href="/danceLoop" className="p-2 bg-gray-800/80 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-xl backdrop-blur-sm" title="Dance Loop">
+                    🔁
+                </a>
                 <a href="/setting" className="p-2 bg-gray-800/80 rounded-full hover:bg-gray-700 transition-colors border border-gray-700 text-xl backdrop-blur-sm" title="Settings">
                     ⚙️
                 </a>
