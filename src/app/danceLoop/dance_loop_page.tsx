@@ -228,11 +228,11 @@ export default function DanceLoop() {
                         </div>
 
                         {/* Slices Display */}
-                        {slices.length > 0 && (
-                            <div className="bg-gray-900/40 rounded-3xl p-6 border border-gray-800/50">
-                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1 flex items-center gap-2">
-                                    <span>📑</span> Video Slices
-                                </h3>
+                        <div className="bg-gray-900/40 rounded-3xl p-6 border border-gray-800/50">
+                            <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 ml-1 flex items-center gap-2">
+                                <span>📑</span> Video Slices
+                            </h3>
+                            {slices.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {slices.map((slice, index) => (
                                         <button
@@ -257,8 +257,15 @@ export default function DanceLoop() {
                                         </button>
                                     ))}
                                 </div>
-                            </div>
-                        )}
+                            ) : (
+                                <div className="py-12 border-2 border-dashed border-gray-800 rounded-2xl flex flex-col items-center justify-center text-center px-6">
+                                    <div className="text-3xl mb-3 opacity-20">📂</div>
+                                    <p className="text-sm text-gray-500 max-w-[200px] leading-relaxed">
+                                        No slices yet. Use the <span className="text-purple-400/80 font-semibold italic">Add</span> tool on the right to save move segments!
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Controls Section */}
@@ -399,15 +406,48 @@ export default function DanceLoop() {
                             </div>
                         </div>
 
-                        {/* Additional Instructions */}
-                        <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-4">
-                            <h3 className="text-purple-400 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-2">
-                                <span className="w-1 h-1 bg-purple-400 rounded-full"></span>
-                                Practice Mode
+                        {/* User Guide Card */}
+                        <div className="bg-gradient-to-br from-gray-900 to-black border border-gray-800 rounded-3xl p-6 shadow-xl space-y-6">
+                            <h3 className="text-sm font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-500 uppercase tracking-widest flex items-center gap-2">
+                                <span>🚀</span> Quick Start Guide
                             </h3>
-                            <p className="text-xs text-purple-300/70 leading-relaxed">
-                                Perfect for nailing that difficult chorus or specific dance move. Set a 5-10 second loop and practice until it's muscle memory!
-                            </p>
+
+                            <div className="space-y-4">
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-6 h-6 bg-purple-600/30 text-purple-400 rounded-lg flex items-center justify-center text-xs font-bold border border-purple-500/30">1</div>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        <span className="text-gray-200 font-semibold">Load Video:</span> Paste any YouTube or Shorts link and hit "Load".
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-6 h-6 bg-purple-600/30 text-purple-400 rounded-lg flex items-center justify-center text-xs font-bold border border-purple-500/30">2</div>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        <span className="text-gray-200 font-semibold">Define Loop:</span> Play the video, use <span className="text-purple-400 font-mono italic">Mark Current</span> to capture start/end points instantly.
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-6 h-6 bg-purple-600/30 text-purple-400 rounded-lg flex items-center justify-center text-xs font-bold border border-purple-500/30">3</div>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        <span className="text-gray-200 font-semibold">Save Moves:</span> Give the segment a name and click <span className="text-purple-400 font-semibold italic">Add</span> to save it as a Slice.
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-6 h-6 bg-pink-600/30 text-pink-400 rounded-lg flex items-center justify-center text-xs font-bold border border-pink-500/30">4</div>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        <span className="text-gray-200 font-semibold">Save Progress:</span> Use <span className="text-pink-400 font-semibold italic">Export</span> to download your practice slices for next time!
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-gray-800/50">
+                                <div className="flex items-center gap-2 text-xs text-purple-400/70 italic">
+                                    <span>💡</span>
+                                    <span>Practice tip: Loop 5-10s sections for muscle memory.</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
