@@ -125,6 +125,15 @@ export default function DanceLoop() {
         }
     };
 
+    const handleDeleteSlice = (index: number) => {
+        setSlices(prev => prev.filter((_, i) => i !== index));
+        setActiveSliceIndex(prev => {
+            if (prev === index) return null;
+            if (prev !== null && prev > index) return prev - 1;
+            return prev;
+        });
+    };
+
     const onPlayerReady: YouTubeProps['onReady'] = (event) => {
         playerRef.current = event.target;
         if (endTime === 0) {
@@ -249,26 +258,37 @@ export default function DanceLoop() {
                             {slices.length > 0 ? (
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     {slices.map((slice, index) => (
-                                        <button
-                                            key={index}
-                                            onClick={() => applySlice(slice, index)}
-                                            className={`p-4 rounded-2xl border transition-all text-left flex justify-between items-center group ${activeSliceIndex === index
-                                                ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
-                                                : 'bg-gray-800/40 border-gray-700 hover:bg-gray-700/60 hover:border-gray-600'
-                                                }`}
-                                        >
-                                            <div className="flex flex-col">
-                                                <span className={`font-bold text-sm ${activeSliceIndex === index ? 'text-purple-300' : 'text-gray-200'}`}>
-                                                    {slice.title}
+                                        <div key={index} className="relative group">
+                                            <button
+                                                onClick={() => applySlice(slice, index)}
+                                                className={`w-full p-4 rounded-2xl border transition-all text-left flex justify-between items-center ${activeSliceIndex === index
+                                                    ? 'bg-purple-600/20 border-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.2)]'
+                                                    : 'bg-gray-800/40 border-gray-700 hover:bg-gray-700/60 hover:border-gray-600'
+                                                    }`}
+                                            >
+                                                <div className="flex flex-col">
+                                                    <span className={`font-bold text-sm ${activeSliceIndex === index ? 'text-purple-300' : 'text-gray-200'}`}>
+                                                        {slice.title}
+                                                    </span>
+                                                    <span className="text-xs text-gray-500 mt-1 font-mono">
+                                                        {slice.start}s - {slice.end}s
+                                                    </span>
+                                                </div>
+                                                <span className={`text-xl transition-transform group-hover:scale-110 ${activeSliceIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                                                    ▶️
                                                 </span>
-                                                <span className="text-xs text-gray-500 mt-1 font-mono">
-                                                    {slice.start}s - {slice.end}s
-                                                </span>
-                                            </div>
-                                            <span className={`text-xl transition-transform group-hover:scale-110 ${activeSliceIndex === index ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                                ▶️
-                                            </span>
-                                        </button>
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleDeleteSlice(index);
+                                                }}
+                                                className="absolute -top-1.5 -right-1.5 w-6 h-6 bg-red-500/90 hover:bg-red-500 text-white rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition-all hover:scale-110 shadow-lg border border-red-400/50 z-10"
+                                                title="Delete Slice"
+                                            >
+                                                ✕
+                                            </button>
+                                        </div>
                                     ))}
                                 </div>
                             ) : (
