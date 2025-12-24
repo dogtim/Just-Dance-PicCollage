@@ -25,6 +25,8 @@ export default function DanceLoop() {
     const [playbackRate, setPlaybackRate] = useState<number>(1.0);
     const [slices, setSlices] = useState<VideoSlice[]>([]);
     const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null);
+    const [playerKey, setPlayerKey] = useState(0);
+    const [lastKnownTime, setLastKnownTime] = useState(0);
 
     const playerRef = useRef<any>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -183,11 +185,16 @@ export default function DanceLoop() {
     };
 
     const onPlayerReady = () => {
-        console.log('Player ready');
         setIsPlayerReady(true);
+
+        // Resume from where we left off if we're re-initializing
+        if (lastKnownTime > 0) {
+            safeSeekTo(lastKnownTime);
+            setLastKnownTime(0);
+        }
+
         if (endTime === 0 && playerRef.current) {
             const duration = playerRef.current.getDuration ? playerRef.current.getDuration() : playerRef.current.duration;
-            console.log('Video duration:', duration);
             setEndTime(duration || 0);
         }
     };
@@ -210,6 +217,19 @@ export default function DanceLoop() {
         }
         return () => clearInterval(interval);
     }, [isPlaying, handleProgress]);
+
+    useEffect(() => {
+        if (!playerRef.current) return;
+
+        // "Kill and Re-init" strategy:
+        // Instead of trying to update a live player (which often fails for speed changes),
+        // we capture the time, destroy the player, and rebuild it with the new rate.
+        console.log("Starting player re-initialization for rate:", playbackRate);
+        const currentTime = safeGetCurrentTime();
+        setLastKnownTime(currentTime);
+        setIsPlayerReady(false);
+        setPlayerKey(prev => prev + 1);
+    }, [playbackRate]);
 
     return (
         <div className="min-h-screen bg-black text-white font-sans p-8">
@@ -261,6 +281,7 @@ export default function DanceLoop() {
                             {url ? (
                                 <div className="w-full h-full relative">
                                     <Player
+                                        key={playerKey}
                                         ref={playerRef}
                                         src={url}
                                         playing={isPlaying}
