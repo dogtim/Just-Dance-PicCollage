@@ -2,7 +2,6 @@
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import Webcam from 'react-webcam';
-import { YouTubeProps, YouTubePlayer } from 'react-youtube';
 import { useSettings } from '../context/SettingsContext';
 
 // Hooks
@@ -42,7 +41,6 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({
     const requestRef = useRef<number>(null);
     const isRunning = useRef<boolean>(false);
 
-    const [player, setPlayer] = useState<YouTubePlayer | null>(null);
     const [cameraLoaded, setCameraLoaded] = useState(false);
     const [cameraError, setCameraError] = useState<string | null>(null);
     const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -101,21 +99,6 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({
         };
     }, [loop, detector]);
 
-    // YouTube Event Handlers
-    const onPlayerReady: YouTubeProps['onReady'] = (event) => {
-        setPlayer(event.target);
-    };
-
-    const onPlayerStateChange: YouTubeProps['onStateChange'] = (event) => {
-        if (event.data === 1) { // Playing
-            isRunning.current = true;
-            loop();
-        } else {
-            isRunning.current = false;
-            if (requestRef.current) cancelAnimationFrame(requestRef.current);
-        }
-    };
-
     // Video Event Handlers
     const handleVideoPlay = () => {
         isRunning.current = true;
@@ -139,12 +122,18 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({
     };
 
     const handleTogglePlay = () => {
-        if (processedVideoRef.current) {
-            if (isVideoPlaying) {
+        if (isVideoPlaying) {
+            if (processedVideoRef.current) {
                 processedVideoRef.current.pause();
-                stopCountdown();
-            } else {
+            }
+            setIsVideoPlaying(false);
+            stopCountdown();
+        } else {
+            if (processedVideoUrl) {
                 startCountdown(startDelay);
+            } else {
+                // For YouTube, play immediately
+                setIsVideoPlaying(true);
             }
         }
     };
@@ -190,8 +179,6 @@ const DanceCanvas: React.FC<DanceCanvasProps> = ({
                 onVideoPause={handleVideoPause}
                 onVideoEnded={handleVideoEnded}
                 onTogglePlay={handleTogglePlay}
-                onPlayerReady={onPlayerReady}
-                onPlayerStateChange={onPlayerStateChange}
             />
 
             <WebcamLayer
