@@ -22,6 +22,7 @@ export default function DanceLoop() {
     const [startTime, setStartTime] = useState<number>(0);
     const [endTime, setEndTime] = useState<number>(0);
     const [isPlaying, setIsPlaying] = useState(false);
+    const [playbackRate, setPlaybackRate] = useState<number>(1.0);
     const [slices, setSlices] = useState<VideoSlice[]>([]);
     const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null);
 
@@ -264,10 +265,10 @@ export default function DanceLoop() {
                                         src={url}
                                         playing={isPlaying}
                                         controls={true}
-                                        muted={true}
                                         width="100%"
                                         height="100%"
                                         onReady={onPlayerReady}
+                                        playbackRate={playbackRate}
                                         onStart={() => {
                                             console.log('Playback started');
                                             setIsPlaying(true);
@@ -443,6 +444,34 @@ export default function DanceLoop() {
                                 </div>
 
                                 <div className="pt-6 border-t border-gray-800/50 space-y-4">
+                                    {/* Playback Speed Control */}
+                                    <div className="space-y-2">
+                                        <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest ml-1">Playback Speed</div>
+                                        <div className="flex gap-4 items-center">
+                                            <input
+                                                type="range"
+                                                min="0.25"
+                                                max="2"
+                                                step="0.05"
+                                                value={playbackRate}
+                                                onChange={(e) => setPlaybackRate(parseFloat(e.target.value))}
+                                                className="flex-1 h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                                            />
+                                            <div className="flex gap-2">
+                                                <input
+                                                    type="number"
+                                                    step="0.05"
+                                                    min="0.25"
+                                                    max="2"
+                                                    value={playbackRate}
+                                                    onChange={(e) => setPlaybackRate(parseFloat(e.target.value) || 1)}
+                                                    className="w-16 bg-gray-950 border border-gray-800 rounded-lg px-2 py-1 text-white outline-none focus:border-purple-500/50 transition-all font-mono text-xs text-center"
+                                                />
+                                                <span className="text-xs text-gray-500 self-center font-bold">x</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div className="space-y-2">
                                         <div className="text-[10px] text-gray-500 uppercase font-bold tracking-widest ml-1">Slice Title</div>
                                         <div className="flex gap-2">
