@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
@@ -9,6 +9,7 @@ export default function DemoReactPlayer() {
     const [hasMounted, setHasMounted] = useState(false);
     const [status, setStatus] = useState('Initializing...');
     const [isPlaying, setIsPlaying] = useState(true);
+    const playerRef = useRef<any>(null);
     const url = 'https://www.youtube.com/watch?v=LXb3EKWsInQ';
 
     const Player = ReactPlayer as any;
@@ -42,6 +43,7 @@ export default function DemoReactPlayer() {
 
                 <div className="aspect-video bg-gray-900 rounded-3xl border border-gray-800 overflow-hidden shadow-2xl relative">
                     <Player
+                        ref={playerRef}
                         src={url}
                         playing={isPlaying}
                         controls
@@ -81,6 +83,25 @@ export default function DemoReactPlayer() {
                     <div className="bg-gray-900/50 backdrop-blur-xl rounded-2xl p-6 border border-gray-800">
                         <h2 className="text-xl font-semibold mb-4 text-pink-400">Alternative Options</h2>
                         <div className="space-y-2">
+                            <button
+                                onClick={() => {
+                                    if (playerRef.current) {
+                                        console.log('Player Ref:', playerRef.current);
+                                        // Standard ReactPlayer instance
+                                        if (typeof playerRef.current.seekTo === 'function') {
+                                            const currentTime = playerRef.current.getCurrentTime ? playerRef.current.getCurrentTime() : 0;
+                                            playerRef.current.seekTo(currentTime + 10);
+                                        }
+                                        // Fallback for HTML5 video element
+                                        else if (typeof playerRef.current.currentTime === 'number') {
+                                            playerRef.current.currentTime += 10;
+                                        }
+                                    }
+                                }}
+                                className="w-full py-2 bg-purple-600 hover:bg-purple-500 rounded-lg text-sm transition-colors font-semibold"
+                            >
+                                Seek +10s
+                            </button>
                             <button
                                 onClick={() => window.location.reload()}
                                 className="w-full py-2 bg-gray-800 hover:bg-gray-700 rounded-lg text-sm transition-colors"

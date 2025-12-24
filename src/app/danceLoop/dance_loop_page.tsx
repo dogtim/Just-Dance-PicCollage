@@ -31,6 +31,27 @@ export default function DanceLoop() {
 
     const Player = ReactPlayer as any;
 
+    const safeSeekTo = (time: number) => {
+        if (playerRef.current) {
+            if (typeof playerRef.current.seekTo === 'function') {
+                playerRef.current.seekTo(time, 'seconds');
+            } else if (typeof playerRef.current.currentTime === 'number') {
+                playerRef.current.currentTime = time;
+            }
+        }
+    };
+
+    const safeGetCurrentTime = (): number => {
+        if (playerRef.current) {
+            if (typeof playerRef.current.getCurrentTime === 'function') {
+                return playerRef.current.getCurrentTime();
+            } else if (typeof playerRef.current.currentTime === 'number') {
+                return playerRef.current.currentTime;
+            }
+        }
+        return 0;
+    };
+
     const handleReset = () => {
         if (slices.length === 0) return;
         if (window.confirm('Are you sure you want to clear all slices? This action cannot be undone.')) {
@@ -146,7 +167,7 @@ export default function DanceLoop() {
         setActiveSliceIndex(index);
 
         if (playerRef.current) {
-            playerRef.current.seekTo(start);
+            safeSeekTo(start);
             setIsPlaying(true);
         }
     };
@@ -164,16 +185,16 @@ export default function DanceLoop() {
         console.log('Player ready');
         setIsPlayerReady(true);
         if (endTime === 0 && playerRef.current) {
-            const duration = playerRef.current.duration;
+            const duration = playerRef.current.getDuration ? playerRef.current.getDuration() : playerRef.current.duration;
             console.log('Video duration:', duration);
-            setEndTime(duration);
+            setEndTime(duration || 0);
         }
     };
 
     const handleProgress = (state: any) => {
         if (isPlaying && endTime > 0 && state.playedSeconds >= endTime) {
             console.log('Looping back to:', startTime);
-            playerRef.current?.seekTo(startTime, 'seconds');
+            safeSeekTo(startTime);
         }
     };
 
@@ -252,26 +273,6 @@ export default function DanceLoop() {
                                         onProgress={handleProgress}
                                         progressInterval={100}
                                     />
-
-                                    {/* Custom Control Overlay (Optional/Subtle) */}
-                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                                        {!isPlaying && isPlayerReady && (
-                                            <button
-                                                onClick={() => setIsPlaying(true)}
-                                                className="pointer-events-auto p-6 bg-purple-600/80 hover:bg-purple-500 rounded-full transition-all shadow-2xl transform active:scale-95 border border-purple-400/50 backdrop-blur-sm"
-                                            >
-                                                <span className="text-3xl">▶️</span>
-                                            </button>
-                                        )}
-                                    </div>
-
-                                    {/* Play/Pause Toggle Hover Button */}
-                                    <button
-                                        onClick={() => setIsPlaying(!isPlaying)}
-                                        className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/80 rounded-xl border border-white/10 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300"
-                                    >
-                                        {isPlaying ? "⏸️ Pause" : "▶️ Play"}
-                                    </button>
                                 </div>
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
@@ -382,7 +383,7 @@ export default function DanceLoop() {
                                             <button
                                                 onClick={() => {
                                                     if (playerRef.current) {
-                                                        const current = playerRef.current.getCurrentTime();
+                                                        const current = safeGetCurrentTime();
                                                         setStartTime(parseFloat(current.toFixed(1)));
                                                     }
                                                 }}
@@ -409,7 +410,7 @@ export default function DanceLoop() {
                                             <button
                                                 onClick={() => {
                                                     if (playerRef.current) {
-                                                        const current = playerRef.current.getCurrentTime();
+                                                        const current = safeGetCurrentTime();
                                                         setEndTime(parseFloat(current.toFixed(1)));
                                                     }
                                                 }}
