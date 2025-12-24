@@ -108,7 +108,7 @@ def process_video(input_path, output_path, video_id):
             })
             next_checkpoint_time += checkpoint_interval
 
-        # Draw landmarks on the original frame with 0.75 alpha
+        # Draw landmarks on the original frame with 0.2 alpha
         if results.pose_landmarks:
             overlay = frame.copy()
             mp_drawing.draw_landmarks(
@@ -118,7 +118,7 @@ def process_video(input_path, output_path, video_id):
                 mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=2, circle_radius=2),
                 mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2)
             )
-            # Apply alpha blending: 0.75 * overlay + 0.25 * frame
+            # Apply alpha blending: 0.2 * overlay + 0.8 * frame
             cv2.addWeighted(overlay, 0.75, frame, 0.25, 0, frame)
 
         # Write to ffmpeg

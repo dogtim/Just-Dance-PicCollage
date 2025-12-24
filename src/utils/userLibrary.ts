@@ -5,6 +5,7 @@ export interface LibraryItem {
     videoPath: string;
     meshPath: string;
     timestamp: number;
+    difficulty?: string;
 }
 
 const STORAGE_KEY = 'just_dance_user_library';
