@@ -191,13 +191,24 @@ export default function DanceLoop() {
         }
     };
 
-    const handleProgress = (state: any) => {
-        // console.log('Progress:', state.playedSeconds); // Uncomment to debug
-        if (isPlaying && endTime > 0 && state.playedSeconds >= endTime) {
+    const handleProgress = useCallback(() => {
+        const currentTime = safeGetCurrentTime();
+        // console.log('Timer Progress:', currentTime); // Uncomment for debug
+        if (endTime > 0 && currentTime >= endTime) {
             console.log('Looping back to:', startTime);
             safeSeekTo(startTime);
         }
-    };
+    }, [endTime, startTime, safeGetCurrentTime, safeSeekTo]);
+
+    useEffect(() => {
+        let interval: NodeJS.Timeout;
+        if (isPlaying) {
+            interval = setInterval(() => {
+                handleProgress();
+            }, 100);
+        }
+        return () => clearInterval(interval);
+    }, [isPlaying, handleProgress]);
 
     return (
         <div className="min-h-screen bg-black text-white font-sans p-8">
@@ -270,8 +281,6 @@ export default function DanceLoop() {
                                             setIsPlaying(false);
                                         }}
                                         onError={(e: any) => console.error('Player error:', e)}
-                                        onProgress={handleProgress}
-                                        progressInterval={100}
                                     />
                                 </div>
                             ) : (
