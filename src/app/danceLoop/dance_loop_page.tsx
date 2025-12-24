@@ -146,7 +146,7 @@ export default function DanceLoop() {
         setActiveSliceIndex(index);
 
         if (playerRef.current) {
-            playerRef.current.seekTo(start, 'seconds');
+            playerRef.current.seekTo(start);
             setIsPlaying(true);
         }
     };
@@ -164,7 +164,7 @@ export default function DanceLoop() {
         console.log('Player ready');
         setIsPlayerReady(true);
         if (endTime === 0 && playerRef.current) {
-            const duration = playerRef.current.getDuration();
+            const duration = playerRef.current.duration;
             console.log('Video duration:', duration);
             setEndTime(duration);
         }
@@ -227,11 +227,10 @@ export default function DanceLoop() {
                             {url ? (
                                 <div className="w-full h-full relative">
                                     <Player
-                                        key={url}
                                         ref={playerRef}
-                                        url={url}
+                                        src={url}
                                         playing={isPlaying}
-                                        controls
+                                        muted={true}
                                         width="100%"
                                         height="100%"
                                         onReady={onPlayerReady}
