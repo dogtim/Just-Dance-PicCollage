@@ -192,6 +192,7 @@ export default function DanceLoop() {
     };
 
     const handleProgress = (state: any) => {
+        // console.log('Progress:', state.playedSeconds); // Uncomment to debug
         if (isPlaying && endTime > 0 && state.playedSeconds >= endTime) {
             console.log('Looping back to:', startTime);
             safeSeekTo(startTime);
@@ -268,8 +269,6 @@ export default function DanceLoop() {
                                             console.log('Player onPause');
                                             setIsPlaying(false);
                                         }}
-                                        onBuffer={() => console.log('Player onBuffer')}
-                                        onBufferEnd={() => console.log('Player onBufferEnd')}
                                         onError={(e: any) => console.error('Player error:', e)}
                                         onProgress={handleProgress}
                                         progressInterval={100}

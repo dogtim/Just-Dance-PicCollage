@@ -1,0 +1,3 @@
+# Project Rules
+
+1. **React Player Props**: When using `react-player`, ALWAYS use the `src` prop for the video URL (e.g., `src={url}`). DO NOT use the `url` prop. This is a strict requirement for this project's setup.
