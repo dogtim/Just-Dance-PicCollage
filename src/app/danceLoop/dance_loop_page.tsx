@@ -2,7 +2,8 @@
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import YouTube, { YouTubePlayer, YouTubeProps } from 'react-youtube';
+import dynamic from 'next/dynamic';
+const ReactPlayer = dynamic(() => import('react-player'), { ssr: false });
 
 interface VideoSlice {
     title: string;
@@ -24,9 +25,11 @@ export default function DanceLoop() {
     const [slices, setSlices] = useState<VideoSlice[]>([]);
     const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null);
 
-    const playerRef = useRef<YouTubePlayer | null>(null);
-    const loopIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const playerRef = useRef<any>(null);
+    const [isPlayerReady, setIsPlayerReady] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const Player = ReactPlayer as any;
 
     const handleReset = () => {
         if (slices.length === 0) return;
@@ -36,23 +39,46 @@ export default function DanceLoop() {
         }
     };
 
-    const extractVideoId = (url: string) => {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[2].length === 11) ? match[2] : null;
+    const cleanUrl = (input: string) => {
+        let cleaned = input.trim();
+        // Handle markdown artifacts: [label](url) or ](url)
+        const mdLinkMatch = cleaned.match(/\[.*?\]\((.*?)\)/);
+        if (mdLinkMatch) return mdLinkMatch[1];
+        const partialMdMatch = cleaned.match(/\]\((.*?)\)/);
+        if (partialMdMatch) return partialMdMatch[1];
+        return cleaned;
+    };
+
+    const getSourceId = (url: string) => {
+        const ytRegExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|\/shorts\/)([a-zA-Z0-9_-]{11})/;
+        const match = url.match(ytRegExp);
+        if (match) return match[2];
+
+        // Handle local files or other URLs
+        try {
+            const parts = url.split('/');
+            const filename = parts[parts.length - 1];
+            return filename.split('.')[0] || 'video';
+        } catch (e) {
+            return 'video';
+        }
     };
 
     const handleLoadVideo = useCallback((newUrl?: string) => {
-        const targetUrl = newUrl !== undefined ? newUrl : url;
-        const id = extractVideoId(targetUrl);
-        if (id) {
-            setVideoId(id);
-            if (newUrl !== undefined) setUrl(newUrl);
+        const rawUrl = (newUrl !== undefined ? newUrl : url).trim();
+        if (rawUrl) {
+            const cleaned = cleanUrl(rawUrl);
+            console.log('Loading video:', cleaned);
+            setVideoId(getSourceId(cleaned));
+            setUrl(cleaned);
+            setIsPlaying(true);
+
             // Reset times when new video loads manually
             setStartTime(0);
             setEndTime(0);
             setSlices([]);
             setActiveSliceIndex(null);
+            setIsPlayerReady(false);
         }
     }, [url]);
 
@@ -94,8 +120,8 @@ export default function DanceLoop() {
                 const data: ImportData = JSON.parse(event.target?.result as string);
                 if (data.video_url) {
                     setUrl(data.video_url);
-                    const id = extractVideoId(data.video_url);
-                    if (id) setVideoId(id);
+                    setVideoId(getSourceId(data.video_url));
+                    setIsPlaying(true);
                 }
                 if (data.video_slices) {
                     setSlices(data.video_slices.map(s => ({
@@ -120,8 +146,8 @@ export default function DanceLoop() {
         setActiveSliceIndex(index);
 
         if (playerRef.current) {
-            playerRef.current.seekTo(start, true);
-            playerRef.current.playVideo();
+            playerRef.current.seekTo(start, 'seconds');
+            setIsPlaying(true);
         }
     };
 
@@ -134,52 +160,21 @@ export default function DanceLoop() {
         });
     };
 
-    const onPlayerReady: YouTubeProps['onReady'] = (event) => {
-        playerRef.current = event.target;
-        if (endTime === 0) {
-            const duration = event.target.getDuration();
+    const onPlayerReady = () => {
+        console.log('Player ready');
+        setIsPlayerReady(true);
+        if (endTime === 0 && playerRef.current) {
+            const duration = playerRef.current.getDuration();
+            console.log('Video duration:', duration);
             setEndTime(duration);
         }
     };
 
-    const onPlayerStateChange: YouTubeProps['onStateChange'] = (event) => {
-        // YT.PlayerState.PLAYING is 1
-        if (event.data === 1) {
-            setIsPlaying(true);
-        } else {
-            setIsPlaying(false);
+    const handleProgress = (state: any) => {
+        if (isPlaying && endTime > 0 && state.playedSeconds >= endTime) {
+            console.log('Looping back to:', startTime);
+            playerRef.current?.seekTo(startTime, 'seconds');
         }
-    };
-
-    const checkLoop = useCallback(() => {
-        if (playerRef.current && isPlaying && endTime > 0) {
-            const currentTime = playerRef.current.getCurrentTime();
-            if (currentTime >= endTime) {
-                playerRef.current.seekTo(startTime, true);
-            }
-        }
-    }, [startTime, endTime, isPlaying]);
-
-    useEffect(() => {
-        if (isPlaying) {
-            loopIntervalRef.current = setInterval(checkLoop, 100);
-        } else {
-            if (loopIntervalRef.current) clearInterval(loopIntervalRef.current);
-        }
-        return () => {
-            if (loopIntervalRef.current) clearInterval(loopIntervalRef.current);
-        };
-    }, [isPlaying, checkLoop]);
-
-    const opts: YouTubeProps['opts'] = {
-        height: '100%',
-        width: '100%',
-        playerVars: {
-            autoplay: 1,
-            controls: 1,
-            modestbranding: 1,
-            rel: 0,
-        },
     };
 
     return (
@@ -229,15 +224,55 @@ export default function DanceLoop() {
                     {/* Player Section */}
                     <div className="lg:col-span-2 space-y-6">
                         <div className="aspect-video bg-gray-900 rounded-3xl border border-gray-800 overflow-hidden shadow-2xl relative group">
-                            {videoId ? (
-                                <div className="w-full h-full">
-                                    <YouTube
-                                        videoId={videoId}
-                                        opts={opts}
+                            {url ? (
+                                <div className="w-full h-full relative">
+                                    <Player
+                                        key={url}
+                                        ref={playerRef}
+                                        url={url}
+                                        playing={isPlaying}
+                                        controls
+                                        width="100%"
+                                        height="100%"
                                         onReady={onPlayerReady}
-                                        onStateChange={onPlayerStateChange}
-                                        className="w-full h-full"
+                                        onStart={() => {
+                                            console.log('Playback started');
+                                            setIsPlaying(true);
+                                        }}
+                                        onPlay={() => {
+                                            console.log('Player onPlay');
+                                            setIsPlaying(true);
+                                        }}
+                                        onPause={() => {
+                                            console.log('Player onPause');
+                                            setIsPlaying(false);
+                                        }}
+                                        onBuffer={() => console.log('Player onBuffer')}
+                                        onBufferEnd={() => console.log('Player onBufferEnd')}
+                                        onError={(e: any) => console.error('Player error:', e)}
+                                        onProgress={handleProgress}
+                                        progressInterval={100}
                                     />
+
+                                    {/* Custom Control Overlay (Optional/Subtle) */}
+                                    <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                                        {!isPlaying && isPlayerReady && (
+                                            <button
+                                                onClick={() => setIsPlaying(true)}
+                                                className="pointer-events-auto p-6 bg-purple-600/80 hover:bg-purple-500 rounded-full transition-all shadow-2xl transform active:scale-95 border border-purple-400/50 backdrop-blur-sm"
+                                            >
+                                                <span className="text-3xl">▶️</span>
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    {/* Play/Pause Toggle Hover Button */}
+                                    <button
+                                        onClick={() => setIsPlaying(!isPlaying)}
+                                        className="absolute bottom-4 right-4 z-10 p-2.5 bg-black/60 hover:bg-black/80 rounded-xl border border-white/10 backdrop-blur-md opacity-0 group-hover:opacity-100 transition-all duration-300"
+                                    >
+                                        {isPlaying ? "⏸️ Pause" : "▶️ Play"}
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="absolute inset-0 flex flex-col items-center justify-center p-12 text-center">
@@ -245,7 +280,18 @@ export default function DanceLoop() {
                                         <span className="text-4xl text-gray-500">📺</span>
                                     </div>
                                     <h2 className="text-xl font-semibold text-gray-300 mb-2">Ready to practice?</h2>
-                                    <p className="text-gray-500 max-w-sm">Paste a YouTube URL or import a JSON playlist to start looping your practice sessions.</p>
+                                    <p className="text-gray-500 max-w-sm">Paste a YouTube URL or a local video path to start looping your practice sessions.</p>
+                                    <div className="mt-6 flex flex-wrap justify-center gap-2">
+                                        <button
+                                            onClick={() => {
+                                                setUrl('/processed/1OPKKCIq3jA.mp4');
+                                                handleLoadVideo('/processed/1OPKKCIq3jA.mp4');
+                                            }}
+                                            className="text-[10px] bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 transition-colors"
+                                        >
+                                            Try Sample Local Video
+                                        </button>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -311,7 +357,7 @@ export default function DanceLoop() {
                                 <div className="flex gap-2 p-1.5 bg-gray-950 rounded-2xl border border-gray-800 focus-within:border-purple-500/50 transition-all">
                                     <input
                                         type="text"
-                                        placeholder="Paste YouTube URL..."
+                                        placeholder="Paste YouTube URL or local path..."
                                         className="flex-1 bg-transparent px-4 py-2 outline-none text-sm placeholder:text-gray-600"
                                         value={url}
                                         onChange={(e) => setUrl(e.target.value)}
@@ -434,7 +480,7 @@ export default function DanceLoop() {
                                     </div>
 
                                     <p className="text-xs text-gray-500 leading-relaxed italic">
-                                        Pro tip: Use the YouTube player controls to find your exact timestamps. The video will automatically loop back to {startTime}s once it hits {endTime}s.
+                                        Pro tip: Use the player controls to find your exact timestamps. The video will automatically loop back to {startTime}s once it hits {endTime}s.
                                     </p>
                                 </div>
                             </div>
@@ -450,7 +496,7 @@ export default function DanceLoop() {
                                 <div className="flex gap-4">
                                     <div className="flex-shrink-0 w-6 h-6 bg-purple-600/30 text-purple-400 rounded-lg flex items-center justify-center text-xs font-bold border border-purple-500/30">1</div>
                                     <p className="text-xs text-gray-400 leading-relaxed">
-                                        <span className="text-gray-200 font-semibold">Load Video:</span> Paste any YouTube or Shorts link and hit "Load".
+                                        <span className="text-gray-200 font-semibold">Load Video:</span> Paste any YouTube link, Shorts, or local file path and hit "Load".
                                     </p>
                                 </div>
 
