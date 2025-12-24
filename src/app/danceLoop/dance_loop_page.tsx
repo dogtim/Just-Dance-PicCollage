@@ -251,6 +251,7 @@ export default function DanceLoop() {
                                         ref={playerRef}
                                         src={url}
                                         playing={isPlaying}
+                                        controls={true}
                                         muted={true}
                                         width="100%"
                                         height="100%"
