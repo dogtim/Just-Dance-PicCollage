@@ -31,6 +31,7 @@ export default function DanceLoop() {
     const playerRef = useRef<any>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const videoInputRef = useRef<HTMLInputElement>(null);
 
     const Player = ReactPlayer as any;
 
@@ -105,6 +106,14 @@ export default function DanceLoop() {
             setIsPlayerReady(false);
         }
     }, [url]);
+
+    const handleVideoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const videoUrl = URL.createObjectURL(file);
+        handleLoadVideo(videoUrl);
+    };
 
     const handleExportJson = () => {
         if (!url || slices.length === 0) {
@@ -250,6 +259,13 @@ export default function DanceLoop() {
                             ref={fileInputRef}
                             className="hidden"
                         />
+                        <input
+                            type="file"
+                            accept="video/*"
+                            onChange={handleVideoSelect}
+                            ref={videoInputRef}
+                            className="hidden"
+                        />
                         <button
                             onClick={handleReset}
                             className="px-5 py-2.5 bg-red-600/20 hover:bg-red-600/30 text-red-400 rounded-xl transition-all border border-red-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
@@ -302,6 +318,16 @@ export default function DanceLoop() {
                                             console.log('Player onPause');
                                             setIsPlaying(false);
                                         }}
+                                        config={{
+                                            youtube: {
+                                                playerVars: { origin: typeof window !== 'undefined' ? window.location.origin : '' }
+                                            },
+                                            file: {
+                                                attributes: {
+                                                    crossOrigin: 'anonymous'
+                                                }
+                                            }
+                                        }}
                                         onError={(e: any) => console.error('Player error:', e)}
                                     />
                                 </div>
@@ -314,13 +340,10 @@ export default function DanceLoop() {
                                     <p className="text-gray-500 max-w-sm">Paste a YouTube URL or a local video path to start looping your practice sessions.</p>
                                     <div className="mt-6 flex flex-wrap justify-center gap-2">
                                         <button
-                                            onClick={() => {
-                                                setUrl('/processed/1OPKKCIq3jA.mp4');
-                                                handleLoadVideo('/processed/1OPKKCIq3jA.mp4');
-                                            }}
-                                            className="text-[10px] bg-gray-800 hover:bg-gray-700 px-3 py-1.5 rounded-lg border border-gray-700 text-gray-400 transition-colors"
+                                            onClick={() => videoInputRef.current?.click()}
+                                            className="text-[10px] bg-purple-600/20 hover:bg-purple-600/30 px-4 py-2 rounded-xl border border-purple-500/30 text-purple-400 transition-all font-bold uppercase tracking-wider flex items-center gap-2"
                                         >
-                                            Try Sample Local Video
+                                            <span>📂</span> Select Local Video
                                         </button>
                                     </div>
                                 </div>
