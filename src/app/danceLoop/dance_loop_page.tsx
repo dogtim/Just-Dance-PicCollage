@@ -27,6 +27,7 @@ export default function DanceLoop() {
     const [activeSliceIndex, setActiveSliceIndex] = useState<number | null>(null);
     const [playerKey, setPlayerKey] = useState(0);
     const [lastKnownTime, setLastKnownTime] = useState(0);
+    const [isFlipped, setIsFlipped] = useState(false);
 
     const playerRef = useRef<any>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
@@ -279,6 +280,15 @@ export default function DanceLoop() {
                             <span>📥</span> Import
                         </button>
                         <button
+                            onClick={() => setIsFlipped(!isFlipped)}
+                            className={`px-5 py-2.5 rounded-xl transition-all border backdrop-blur-sm text-sm font-medium flex items-center gap-2 ${isFlipped
+                                ? 'bg-amber-600/30 border-amber-500/50 text-amber-400 shadow-[0_0_15px_rgba(217,119,6,0.2)]'
+                                : 'bg-gray-800/80 border-gray-700 text-gray-400 hover:bg-gray-700'
+                                }`}
+                        >
+                            <span>{isFlipped ? '🪞' : '🖼️'}</span> {isFlipped ? 'Mirrored' : 'Mirror'}
+                        </button>
+                        <button
                             onClick={handleExportJson}
                             className="px-5 py-2.5 bg-pink-600/20 hover:bg-pink-600/30 text-pink-400 rounded-xl transition-all border border-pink-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
                         >
@@ -295,7 +305,10 @@ export default function DanceLoop() {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="aspect-video bg-gray-900 rounded-3xl border border-gray-800 overflow-hidden shadow-2xl relative group">
                             {url ? (
-                                <div className="w-full h-full relative">
+                                <div
+                                    className="w-full h-full relative transition-transform duration-500 ease-in-out"
+                                    style={{ transform: isFlipped ? 'scaleX(-1)' : 'scaleX(1)' }}
+                                >
                                     <Player
                                         key={playerKey}
                                         ref={playerRef}
@@ -597,7 +610,14 @@ export default function DanceLoop() {
                                 </div>
 
                                 <div className="flex gap-4">
-                                    <div className="flex-shrink-0 w-6 h-6 bg-pink-600/30 text-pink-400 rounded-lg flex items-center justify-center text-xs font-bold border border-pink-500/30">4</div>
+                                    <div className="flex-shrink-0 w-6 h-6 bg-amber-600/30 text-amber-400 rounded-lg flex items-center justify-center text-xs font-bold border border-amber-500/30">4</div>
+                                    <p className="text-xs text-gray-400 leading-relaxed">
+                                        <span className="text-gray-200 font-semibold">Mirror Mode:</span> Use the <span className="text-amber-400 font-semibold italic">Mirror</span> button to flip the video horizontally—perfect for following along like a mirror!
+                                    </p>
+                                </div>
+
+                                <div className="flex gap-4">
+                                    <div className="flex-shrink-0 w-6 h-6 bg-pink-600/30 text-pink-400 rounded-lg flex items-center justify-center text-xs font-bold border border-pink-500/30">5</div>
                                     <p className="text-xs text-gray-400 leading-relaxed">
                                         <span className="text-gray-200 font-semibold">Save Progress:</span> Use <span className="text-pink-400 font-semibold italic">Export</span> to download your practice slices for next time!
                                     </p>
