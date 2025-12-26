@@ -18,6 +18,9 @@ export const AppHeader: React.FC<AppHeaderProps> = ({ userName }) => {
             </div>
 
             <div className="flex items-center gap-4">
+                <a href="/hello" className="p-2 bg-pink-600/20 hover:bg-pink-600/80 rounded-full transition-colors border border-pink-500/50 text-xl backdrop-blur-sm shadow-[0_0_15px_rgba(236,72,153,0.3)]" title="Hello Page">
+                    ✨
+                </a>
                 <a href="/demo_react_player" className="p-2 bg-purple-600/20 hover:bg-purple-600/80 rounded-full transition-colors border border-purple-500/50 text-xl backdrop-blur-sm shadow-[0_0_15px_rgba(168,85,247,0.3)]" title="Demo React Player">
                     📺
                 </a>
