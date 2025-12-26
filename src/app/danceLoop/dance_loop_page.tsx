@@ -30,6 +30,7 @@ export default function DanceLoop() {
     const [isFlipped, setIsFlipped] = useState(false);
 
     const playerRef = useRef<any>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
     const [isPlayerReady, setIsPlayerReady] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const videoInputRef = useRef<HTMLInputElement>(null);
@@ -241,6 +242,18 @@ export default function DanceLoop() {
         setPlayerKey(prev => prev + 1);
     }, [playbackRate]);
 
+    const toggleFullscreen = () => {
+        if (!containerRef.current) return;
+
+        if (!document.fullscreenElement) {
+            containerRef.current.requestFullscreen().catch(err => {
+                console.error(`Error attempting to enable full-screen mode: ${err.message}`);
+            });
+        } else {
+            document.exitFullscreen();
+        }
+    };
+
     return (
         <div className="min-h-screen bg-black text-white font-sans p-8">
             <div className="max-w-6xl mx-auto">
@@ -289,6 +302,12 @@ export default function DanceLoop() {
                             <span>{isFlipped ? '🪞' : '🖼️'}</span> {isFlipped ? 'Mirrored' : 'Mirror'}
                         </button>
                         <button
+                            onClick={toggleFullscreen}
+                            className="px-5 py-2.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 rounded-xl transition-all border border-blue-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
+                        >
+                            <span>⛶</span> Fullscreen
+                        </button>
+                        <button
                             onClick={handleExportJson}
                             className="px-5 py-2.5 bg-pink-600/20 hover:bg-pink-600/30 text-pink-400 rounded-xl transition-all border border-pink-500/30 backdrop-blur-sm text-sm font-medium flex items-center gap-2"
                         >
@@ -303,7 +322,10 @@ export default function DanceLoop() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Player Section */}
                     <div className="lg:col-span-2 space-y-6">
-                        <div className="aspect-video bg-gray-900 rounded-3xl border border-gray-800 overflow-hidden shadow-2xl relative group">
+                        <div
+                            ref={containerRef}
+                            className="aspect-video bg-gray-900 rounded-3xl border border-gray-800 overflow-hidden shadow-2xl relative group"
+                        >
                             {url ? (
                                 <div
                                     className="w-full h-full relative transition-transform duration-500 ease-in-out"
